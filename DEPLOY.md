@@ -26,7 +26,7 @@
 - [ ] **DeepSeek API Key**：https://platform.deepseek.com → API keys → 创建 → 复制（只显示一次）。
 - [ ] **确认余额**：DeepSeek 按 token 计费，余额为 0 时分析会失败（错误码 402）。单次分析约 1.3 万 tokens。
 - [ ] **设一个访问口令**：自己起一个不易猜的字符串（如 12 位以上大小写+数字），后面要发给试用者。
-- [ ] **拿到部署包**：项目里的 `deploy-package/` 文件夹（23 个文件，约 200 KB）。
+- [ ] **拿到部署包**：项目里的 `deploy-package/` 文件夹（25 个文件，约 251 KB）。
 
 > 部署包里**不应该**出现 `.env`、`logs/`、`node_modules/`。上传前请确认，否则会把密钥和用户简历一起传上去。
 
@@ -187,7 +187,7 @@ npm run pack
 | 单次分析耗时 | 约 50-60 秒 |
 | 单次 token 量 | 约 3400 输入 + 10000 输出 |
 | 日志 | `/app/logs/analysis-last.json` |
-| 部署包 | `deploy-package/`（24 个文件，含本清单） |
+| 部署包 | `deploy-package/`（25 个文件，含本清单） |
 
 ---
 
