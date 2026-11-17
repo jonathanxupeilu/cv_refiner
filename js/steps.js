@@ -494,6 +494,14 @@
   RE.steps.render[7] = function (s) {
     var iv = s.analysis.interview;
 
+    var sc = '<div>' + (iv.statusChallenges || []).map(function (c) {
+      return '<div class="qa">' +
+        '<div class="qa-q">「' + esc(c.challenge) + '」</div>' +
+        '<div class="qa-points"><b>HR 真实在筛：</b>' + esc(c.risk) + '</div>' +
+        '<div class="qa-points"><b>回答策略：</b>' + esc(c.strategy) + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+
     var qs = '<div>' + iv.questions.map(function (q, i) {
       return '<div class="qa">' +
         '<div class="qa-q">' + (i + 1) + '. ' + esc(q.q) + '　' + U.badge(q.focus, 'violet') + '</div>' +
@@ -513,13 +521,16 @@
       return ['<b>' + esc(d.item) + '</b>', esc(d.need), '<span class="muted">' + esc(d.use) + '</span>'];
     });
 
-    return U.section('10 个可能被追问的问题', '01', '含考察点与回答要点', U.card(qs)) +
-      U.section('需要准备的证据', '02', '面试前逐项备齐', U.table(['证据', '从哪里取', '为什么需要'], evRows)) +
-      U.section('可能夸大的表达', '03', '诚信核查重点',
+    return U.section('在职状态 × 时间线：针对性质疑与应对', '01', (iv.statusChallenges || []).length + ' 条 · 基于求职阶段与简历时间线',
+      U.callout('<strong>状态类质疑先于能力类问题。</strong>在职看机会、空窗期、频繁跳槽、转型动机——这些质疑不过关，后面的问题根本没有机会回答。每条先看清「HR 真实在筛什么」，再按策略准备话术。') +
+      '<div class="mt12">' + U.card(sc) + '</div>') +
+      U.section('10 个可能被追问的问题', '02', '含考察点与回答要点', U.card(qs)) +
+      U.section('需要准备的证据', '03', '面试前逐项备齐', U.table(['证据', '从哪里取', '为什么需要'], evRows)) +
+      U.section('可能夸大的表达', '04', '诚信核查重点',
         U.callout('<strong>面试官在测诚信，不在测功劳大小。</strong>凡是你没有拍板的事，主动降级措辞比硬撑更安全。', 'risk') +
         '<div class="mt12">' + U.table(['简历表达', '风险', '建议说法'], exRows) + '</div>') +
-      U.section('建议补充的数据', '04', '量化缺口清单', U.table(['项目', '需要补什么', '用于哪里'], gapRows)) +
-      U.section('自我介绍（60-90 秒逐字稿）', '05', '按「主线 → 可迁移能力 → POC → 短板」组织',
+      U.section('建议补充的数据', '05', '量化缺口清单', U.table(['项目', '需要补什么', '用于哪里'], gapRows)) +
+      U.section('自我介绍（60-90 秒逐字稿）', '06', '按「主线 → 可迁移能力 → POC → 短板」组织',
         U.card('<div class="script">' + esc(iv.intro) + '</div>') +
         '<div class="mt12"><button class="btn sm" data-action="copy" data-kind="interview">复制面试材料</button></div>');
   };

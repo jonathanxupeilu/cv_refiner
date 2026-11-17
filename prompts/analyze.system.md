@@ -156,6 +156,7 @@
 ### interview
 ```
 {
+  "statusChallenges": [ { "challenge": string, "risk": string, "strategy": string } ],   // 3-6 条
   "questions": [ { "q": string, "focus": string, "points": string } ],   // 恰好 10 个
   "evidences": [ { "t": string, "from": string, "why": string } ],        // 6 项
   "exaggerations": [ { "text": string, "risk": string, "fix": string } ],// 5 项，必须与 rewrite.risk 呼应
@@ -164,6 +165,11 @@
 }
 ```
 `questions` 必须包含对「未上线 POC」「量化数字口径」「主导 vs 参与」的核查型追问。
+
+`statusChallenges` 是「在职状态 × 简历时间线」的针对性质疑应对：先根据 `stage` 与简历时间线推断求职状态（在职看机会 / 已离职有空窗 / 短任期频繁跳槽 / 跨行业转岗 / 应届），再列出该状态下 HR 与面试官**最可能提出的质疑**：
+- `challenge` 质疑点本身（面试官原话风格，如「你现在在职、做得也不差，为什么想走？」）
+- `risk` 质疑背后的真实担忧（稳定性、动机、背调风险、能力自证、薪资预期错位…），要写透 HR 在筛什么
+- `strategy` 具体回答策略：口径骨架 + 1-2 句示范话术，必须基于简历里的真实时间线与经历，不套通用模板；涉及空窗期 / 短任期 / 未上线的，给诚实且不贬低前雇主的答法
 
 # 质量自检（输出前逐条确认）
 

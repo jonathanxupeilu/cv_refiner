@@ -299,23 +299,30 @@
       var iv = analysis.interview;
       L.push('面试准备材料 · ' + analysis.meta.position);
       L.push('');
-      L.push('一、10 个可能被追问的问题');
+      L.push('一、在职状态 × 时间线：针对性质疑与应对');
+      (iv.statusChallenges || []).forEach(function (c, i) {
+        L.push((i + 1) + '. 质疑：「' + c.challenge + '」');
+        L.push('   HR 真实在筛：' + c.risk);
+        L.push('   回答策略：' + c.strategy);
+      });
+      L.push('');
+      L.push('二、10 个可能被追问的问题');
       iv.questions.forEach(function (q, i) {
         L.push((i + 1) + '. ' + q.q);
         L.push('   考察点：' + q.focus);
         L.push('   回答要点：' + q.points);
       });
       L.push('');
-      L.push('二、需要准备的证据');
+      L.push('三、需要准备的证据');
       iv.evidences.forEach(function (e) { L.push('  - ' + e.t + '（来源：' + e.from + '；用途：' + e.why + '）'); });
       L.push('');
-      L.push('三、可能夸大的表达');
+      L.push('四、可能夸大的表达');
       iv.exaggerations.forEach(function (e) { L.push('  - ' + e.text + '｜风险：' + e.risk + '｜建议：' + e.fix); });
       L.push('');
-      L.push('四、建议补充的数据');
+      L.push('五、建议补充的数据');
       iv.dataGaps.forEach(function (d) { L.push('  - ' + d.item + '：需补 ' + d.need + '（用于 ' + d.use + '）'); });
       L.push('');
-      L.push('五、自我介绍（60-90 秒）');
+      L.push('六、自我介绍（60-90 秒）');
       L.push(iv.intro);
     } else {
       L.push('简历专家 · 完整分析报告');
@@ -356,6 +363,9 @@
       L.push(RE.ai.buildResumeText(analysis, style));
       L.push('');
       L.push('========== 7. 面试准备 ==========');
+      L.push('在职状态质疑应对（详见面试材料）：');
+      (analysis.interview.statusChallenges || []).forEach(function (c, i) { L.push('  ' + (i + 1) + '. ' + c.challenge + ' → ' + c.risk.slice(0, 60) + '…'); });
+      L.push('');
       analysis.interview.questions.forEach(function (q, i) { L.push('  ' + (i + 1) + '. ' + q.q); });
     }
     return L.join('\n');

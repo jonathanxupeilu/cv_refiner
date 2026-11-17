@@ -22,7 +22,8 @@
     "resumeBase.projects[]": ["name", "period", "bullets"],
     "resumeBase.skills[]": ["k", "v"],
     "resumeBase.education": ["school", "major", "degree", "period"],
-    "interview": ["questions", "evidences", "exaggerations", "dataGaps", "intro"],
+    "interview": ["statusChallenges", "questions", "evidences", "exaggerations", "dataGaps", "intro"],
+    "interview.statusChallenges[]": ["challenge", "risk", "strategy"],
     "interview.questions[]": ["q", "focus", "points"],
     "interview.evidences[]": ["t", "from", "why"],
     "interview.exaggerations[]": ["text", "risk", "fix"],
@@ -50,6 +51,7 @@
     "probes": { "min": 5, "max": 10 },
     "rewrite": { "min": 6, "max": 9 },
     "interview.questions": { "min": 10, "max": 10 },
+    "interview.statusChallenges": { "min": 3, "max": 6 },
     "interview.evidences": { "min": 4, "max": 8 },
     "interview.exaggerations": { "min": 4, "max": 7 },
     "interview.dataGaps": { "min": 4, "max": 8 }
