@@ -291,6 +291,7 @@
      ======================================================== */
   RE.steps.render[3] = function (s) {
     var d = s.analysis.diagnosis;
+    var pos = s.analysis.positioning;
 
     var hero = U.card(
       '<div class="score-hero">' + U.ring(d.score) +
@@ -318,11 +319,27 @@
         '<div class="li-detail">' + esc(x.detail) + '</div></div></div>';
     }).join('') + '</div>';
 
+    var posSection = '';
+    if (pos) {
+      var expRows = (pos.expectations || []).map(function (e) {
+        return ['<b>' + esc(e.theme) + '</b>', esc(e.expectation), '<span class="muted">' + esc(e.countermeasure) + '</span>'];
+      });
+      var riskRows = (pos.risks || []).map(function (r) {
+        return ['<span class="cmp-risk">' + esc(r.risk) + '</span>', '<span class="muted">' + esc(r.mitigation) + '</span>'];
+      });
+      posSection = U.section('年龄 / 经验段的 HR 岗位预期', '04', esc(pos.ageBand) + ' · ' + esc(pos.yearsBand),
+        U.table(['筛选维度', 'HR 默认预期', '本简历对策'], expRows) +
+        '<div class="mt12">' + U.callout('<strong>常被预设的扣分项与化解</strong>：以下是该年龄段 / 经验段 HR 的惯性判断，简历与面试话术要提前对冲，不粉饰、也不回避。', 'warn') +
+        '<div class="mt12">' + U.table(['预设偏见', '化解办法'], riskRows) + '</div>' +
+        '<div class="mt12">' + U.callout('<strong>定位建议</strong>：' + esc(pos.advice)) + '</div>');
+    }
+
     return hero +
       U.section('维度评分', '01', '6 个维度 · 强项与短板', dims) +
       U.section('主要问题', '02', d.problems.length + ' 项 · 按严重度排序', U.card(problems)) +
       U.section('优先修改建议', '03', '按 ROI 从高到低执行', U.card(sugg) +
-        '<div class="mt12">' + U.callout('<strong>最高杠杆的一处</strong>：把补充信息里的「LLM 报表问数 POC」提为正文独立项目——它能一次性补齐匹配分析中的 2 个「缺失」项。') + '</div>');
+        '<div class="mt12">' + U.callout('<strong>最高杠杆的一处</strong>：把补充信息里的「LLM 报表问数 POC」提为正文独立项目——它能一次性补齐匹配分析中的 2 个「缺失」项。') + '</div>') +
+      posSection;
   };
 
   /* ========================================================

@@ -367,6 +367,17 @@
       (analysis.interview.statusChallenges || []).forEach(function (c, i) { L.push('  ' + (i + 1) + '. ' + c.challenge + ' → ' + c.risk.slice(0, 60) + '…'); });
       L.push('');
       analysis.interview.questions.forEach(function (q, i) { L.push('  ' + (i + 1) + '. ' + q.q); });
+      L.push('');
+      var pos = analysis.positioning;
+      if (pos) {
+        L.push('========== 8. 年龄 / 经验段的 HR 定位建议 ==========');
+        L.push('年龄段：' + pos.ageBand + '｜经验段：' + pos.yearsBand);
+        L.push('HR 默认预期与本简历对策：');
+        (pos.expectations || []).forEach(function (e) { L.push('  - [' + e.theme + '] ' + e.expectation + ' → 对策：' + e.countermeasure); });
+        L.push('常被预设的扣分项与化解：');
+        (pos.risks || []).forEach(function (r) { L.push('  - ' + r.risk + ' → 化解：' + r.mitigation); });
+        L.push('定位建议：' + pos.advice);
+      }
     }
     return L.join('\n');
   };

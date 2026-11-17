@@ -35,9 +35,9 @@
 - 字符串值内**禁止使用 ASCII 双引号 `"`**（例如不要写 `主导 "报表问数" POC`）；需要引用或强调时改用中文引号「」或书名号《》。这是最常见的解析失败原因。
 - 字符串内的双引号必须转义为 `\"`；不要输出尾随逗号、不要写注释。
 - 输出必须是能被 `JSON.parse` 直接解析的完整 JSON，结尾必须有闭合的 `}`。
-- **括号自检**：`jdParse` / `diagnosis` / `matching` / `probes` / `rewrite` / `resumeBase` / `interview` 这 7 个字段必须都是**根对象的直接子字段**，彼此平级；每写完一个对象立刻用 `}` 闭合，不要漏写（漏写 `}` 会把后面的字段嵌进上一个对象里）。输出前在心里数一遍：每个 `{` 都有对应的 `}`，最后一个字符是根对象的 `}`。## 顶层字段
+- **括号自检**：`jdParse` / `diagnosis` / `matching` / `probes` / `rewrite` / `resumeBase` / `interview` / `positioning` 这 8 个字段必须都是**根对象的直接子字段**，彼此平级；每写完一个对象立刻用 `}` 闭合，不要漏写（漏写 `}` 会把后面的字段嵌进上一个对象里）。输出前在心里数一遍：每个 `{` 都有对应的 `}`，最后一个字符是根对象的 `}`。## 顶层字段
 
-`jdParse` / `diagnosis` / `matching` / `probes` / `rewrite` / `resumeBase` / `interview`
+`jdParse` / `diagnosis` / `matching` / `probes` / `rewrite` / `resumeBase` / `interview` / `positioning`
 
 不要输出 `meta`（由服务端填充）。
 
@@ -170,6 +170,25 @@
 - `challenge` 质疑点本身（面试官原话风格，如「你现在在职、做得也不差，为什么想走？」）
 - `risk` 质疑背后的真实担忧（稳定性、动机、背调风险、能力自证、薪资预期错位…），要写透 HR 在筛什么
 - `strategy` 具体回答策略：口径骨架 + 1-2 句示范话术，必须基于简历里的真实时间线与经历，不套通用模板；涉及空窗期 / 短任期 / 未上线的，给诚实且不贬低前雇主的答法
+
+### positioning
+```
+{
+  "ageBand": string,        // 推断年龄段，如「31-32 岁」，并在句中注明推断依据（毕业年份 / 出生年份 / 工作起始年）
+  "yearsBand": string,      // 经验段，如「6-8 年 B 端产品经验」
+  "expectations": [         // 3-6 条，该年龄 / 经验段 HR 对目标岗位的默认预期，按影响从大到小
+    { "theme": string, "expectation": string, "countermeasure": string }
+  ],
+  "risks": [                // 2-5 条，该年龄段 / 经验段常被预设的扣分项
+    { "risk": string, "mitigation": string }
+  ],
+  "advice": string          // 一段综合定位建议
+}
+```
+- `ageBand` 从 resume 的出生年份 / 毕业年份 / 工作起始年推断；材料完全没有年龄线索时写「未提供年龄线索」，按经验段推断，**不要编造年龄**。
+- `theme` 覆盖该段位 HR 的典型筛选维度：独立负责 / owner 能力、管理与协作幅度、专业深度与方向感、稳定性预期、薪资与级别性价比等，按目标岗位层级取舍。
+- `expectation` 写「默认预期是什么、达不到会怎么扣分」；`countermeasure` 写本简历的对策（哪一处表达、哪个数据能回应）。
+- `risks` 是常被预设的偏见项（如「经验多年但仍是执行层」「转型后定级尴尬」「年纪偏大但职级偏低」），`mitigation` 给出简历与面试层面的化解办法，基于真实材料，不粉饰。
 
 # 质量自检（输出前逐条确认）
 

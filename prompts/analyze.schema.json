@@ -1,7 +1,7 @@
 {
   "version": "resume-expert/v2",
   "description": "DeepSeek 输出契约：字段结构与 js/data.js 的 RE.mock 对齐，供服务端做严格校验。v2：materials 增加 mode（jd 定制版 / generic 通用版，generic 时 jd 可空、由模型推断岗位画像，输出结构不变）。调优改本文件与 prompts/*.md，不改代码。",
-  "topLevel": ["jdParse", "diagnosis", "matching", "probes", "rewrite", "resumeBase", "interview"],
+  "topLevel": ["jdParse", "diagnosis", "matching", "probes", "rewrite", "resumeBase", "interview", "positioning"],
   "required": {
     "jdParse": ["meta", "responsibilities", "hard", "implicit", "keywords", "idealCandidate", "competency"],
     "jdParse.meta": ["position", "level", "domain", "oneLine"],
@@ -27,7 +27,10 @@
     "interview.questions[]": ["q", "focus", "points"],
     "interview.evidences[]": ["t", "from", "why"],
     "interview.exaggerations[]": ["text", "risk", "fix"],
-    "interview.dataGaps[]": ["item", "need", "use"]
+    "interview.dataGaps[]": ["item", "need", "use"],
+    "positioning": ["ageBand", "yearsBand", "expectations", "risks", "advice"],
+    "positioning.expectations[]": ["theme", "expectation", "countermeasure"],
+    "positioning.risks[]": ["risk", "mitigation"]
   },
   "styleKeys": ["balanced", "concise", "humble", "aiProduct", "tobSaas"],
   "styleObjects": ["rewrite[].after", "resumeBase.summaryByStyle", "resumeBase.capabilityByStyle"],
@@ -54,7 +57,9 @@
     "interview.statusChallenges": { "min": 3, "max": 6 },
     "interview.evidences": { "min": 4, "max": 8 },
     "interview.exaggerations": { "min": 4, "max": 7 },
-    "interview.dataGaps": { "min": 4, "max": 8 }
+    "interview.dataGaps": { "min": 4, "max": 8 },
+    "positioning.expectations": { "min": 3, "max": 6 },
+    "positioning.risks": { "min": 2, "max": 5 }
   },
   "numeric": {
     "diagnosis.score": { "min": 0, "max": 100 },
