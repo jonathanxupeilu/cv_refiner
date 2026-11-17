@@ -172,14 +172,28 @@
 
   /* ---------------- PDF 导出 ---------------- */
   /* 零依赖方案：把当前风格的最终简历填入隐藏打印容器，window.print() 弹出打印对话框，
-     用户选「另存为 PDF」即得交付文件。@media print 只显示 print-root（styles.css）。 */
+     用户选「另存为 PDF」即得交付文件。@media print 只显示 print-root（styles.css），
+     且 @page margin:0 使浏览器页眉页脚（应用名 / URL）无渲染空间。 */
   function exportPdf() {
     var s = S.state;
     if (!s.analyzed) { U.toast('请先完成分析', false); return; }
+    /* 打印期间临时替换 title：
+       ① 兜底浏览器页眉显示（部分浏览器 margin 不归零时仍会渲染）；
+       ② 「另存为 PDF」的默认文件名取 document.title，改成「姓名-目标岗位」更合适 */
+    var prevTitle = document.title;
+    var b = s.analysis.resumeBase;
+    document.title = (b.personal.name || '简历') + '-' + (s.analysis.meta.position || '').replace(/[\\/:*?"<>|]/g, '');
     document.getElementById('print-root').innerHTML =
       RE.steps.renderResume(s.analysis, s.style);
-    U.toast('已唤起打印：目标打印机选「另存为 PDF」');
+    function restoreTitle() { document.title = prevTitle; }
+    window.addEventListener('afterprint', restoreTitle);
+    U.toast('已唤起打印：目标打印机选「另存为 PDF」，页眉页脚不会出现');
     window.print();
+    /* afterprint 兜底：个别浏览器不触发时定时恢复，重复恢复幂等 */
+    setTimeout(function () {
+      window.removeEventListener('afterprint', restoreTitle);
+      restoreTitle();
+    }, 3000);
   }
 
   /* ---------------- JD 截图上传 ---------------- */
