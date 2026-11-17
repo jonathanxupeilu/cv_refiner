@@ -231,6 +231,22 @@
     return base + '（结合你的补充：' + first + '）';
   }
 
+  /* JD 截图 → JD 文本（POST /api/jd-ocr，OpenAI 兼容多模态）。
+     需要服务端已接入真实模型；mock 模式 / 模型不支持图片时显式报错，不静默。 */
+  RE.ai.extractJdFromImage = function (dataURL) {
+    return RE.ai.apiFetch('/api/jd-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataURL })
+    })
+      .then(function (r) {
+        return r.json().then(function (p) {
+          if (!r.ok || !p.ok || !p.jd) throw makeAiError(p, r.status);
+          return p.jd;
+        });
+      });
+  };
+
   /* 生成最终简历纯文本（用于导出 / 复制） */
   RE.ai.buildResumeText = function (analysis, style) {
     var b = analysis.resumeBase;

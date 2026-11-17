@@ -106,7 +106,17 @@
 
       U.section('目标 JD', 'B', '解析与匹配的唯一口径来源',
         '<div class="card">' +
-          textareaField('岗位描述原文', 'jd', m.jd, { req: true, mono: true, rows: 10, ph: '粘贴完整 JD，包含职责与任职要求…', hint: '建议保留职责 / 要求编号，隐性要求的识别更准。' }) +
+          '<div class="jd-upload-row">' +
+            '<label class="btn sm">📷 上传 JD 截图<input type="file" accept="image/png,image/jpeg,image/webp" data-jd-file hidden /></label>' +
+            '<span class="card-hint">招聘 App 的 JD 截图可直接上传，由模型转录为文本（长边自动压缩至 1600px）；也可以直接粘贴文本。</span>' +
+            (m.jdImage
+              ? '<span class="jd-preview"><img class="jd-thumb" src="' + m.jdImage + '" alt="JD 截图预览" />' +
+                '<button class="btn xs" data-action="clear-jd-image">移除截图</button></span>'
+              : '') +
+          '</div>' +
+          '<div class="mt12">' +
+            textareaField('岗位描述原文', 'jd', m.jd, { req: true, mono: true, rows: 10, ph: '粘贴完整 JD，包含职责与任职要求…', hint: '建议保留职责 / 要求编号，隐性要求的识别更准。' }) +
+          '</div>' +
         '</div>') +
 
       U.section('原始简历与补充信息', 'C', '',

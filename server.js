@@ -125,6 +125,7 @@ function readPrompt(name) {
 }
 const PROMPT_ANALYZE = readPrompt('analyze.system.md');
 const PROMPT_BULLET = readPrompt('bullet.system.md');
+const PROMPT_JDOCR = readPrompt('jdocr.system.md');
 const SCHEMA = JSON.parse(readPrompt('analyze.schema.json'));
 
 /* ------------------------------------------------------------
@@ -154,6 +155,8 @@ function classify(err) {
     code = 'PERMISSION_DENIED'; hint = '权限受限或端点写错。请逐一核对 /api/verify 里各候选端点的结果，不要凭裸 HTTP 状态码猜测。';
   } else if (status === 429 || name === 'RateLimitError') {
     code = 'RATE_LIMIT'; hint = '触发限流，稍后重试；可在 /api/verify 确认账号并发上限。';
+  } else if (status === 400 && /image|multimodal|vision|视觉|图片|content.?type/i.test(msg)) {
+    code = 'VISION_UNSUPPORTED'; hint = '当前模型不支持图片输入（多模态）。请直接粘贴 JD 文本，或在 .env 将 DEEPSEEK_MODEL 换成支持视觉的模型。';
   } else if (status === 400 && /model/i.test(msg)) {
     code = 'MODEL_NOT_FOUND'; hint = '模型名不存在。当前现役为 deepseek-flash / deepseek-v4-pro；deepseek-chat、deepseek-reasoner 已于 2026-07-24 停用。';
   } else if (status === 400 && /context|length|token/i.test(msg)) {
@@ -600,6 +603,60 @@ async function handleBullet(body) {
 }
 
 /* ------------------------------------------------------------
+   5b. /api/jd-ocr：JD 截图 → JD 文本（OpenAI 兼容多模态，image_url）
+       - 前端已用 canvas 压缩（长边 ≤1600px，JPEG 0.82）；这里再兜底校验大小
+       - 模型不支持图片时 classify 给 VISION_UNSUPPORTED，前端明确提示粘贴文本
+   ------------------------------------------------------------ */
+const IMG_MIME_OK = /^data:image\/(png|jpeg|jpg|webp);base64,/;
+const IMG_MAX_BYTES = 6 * 1024 * 1024;   // base64 解码后上限
+
+async function handleJdOcr(body) {
+  if (CFG.mode !== 'deepseek') {
+    return { status: 503, payload: { ok: false, code: 'NO_KEY', message: '截图识别需要服务端配置 DEEPSEEK_API_KEY（local-mock 不支持图片）', mode: 'local-mock' } };
+  }
+  const image = body && body.image;
+  if (!image || !IMG_MIME_OK.test(image)) {
+    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 image 或不是 data:image/…;base64, 格式' } };
+  }
+  const b64 = image.slice(image.indexOf(',') + 1);
+  const approxBytes = Math.floor(b64.length * 3 / 4);
+  if (approxBytes > IMG_MAX_BYTES) {
+    return { status: 400, payload: { ok: false, code: 'IMAGE_TOO_LARGE', message: '图片过大（解码后约 ' + Math.round(approxBytes / 1024) + ' KB，上限 6 MB）' } };
+  }
+
+  try {
+    const completion = await makeClient().chat.completions.create({
+      model: CFG.model,
+      messages: [
+        { role: 'system', content: PROMPT_JDOCR },
+        { role: 'user', content: [
+          { type: 'text', text: JSON.stringify({ instruction: '请转录图片中的岗位描述' }) },
+          { type: 'image_url', image_url: { url: image } }
+        ] }
+      ],
+      response_format: { type: 'json_object' },
+      thinking: { type: 'disabled' },
+      temperature: 0.1,
+      max_tokens: 4000,
+      stream: false
+    });
+    const raw = (completion.choices[0].message.content || '').trim();
+    const parsed = parseJsonLoose(raw);
+    const jd = String(parsed.jd || '').trim();
+    writeLog({ ok: true, stage: 'jd-ocr', inputSizes: { imageKB: Math.round(approxBytes / 1024) },
+      jdLen: jd.length, reason: parsed.reason || '', usage: completion.usage || null });
+    if (!jd) {
+      return { status: 200, payload: { ok: false, code: 'OCR_EMPTY', message: parsed.reason || '未能从截图中识别出 JD 正文，请换一张更清晰的截图或直接粘贴文本' } };
+    }
+    return { status: 200, payload: { ok: true, jd, provider: 'deepseek', model: CFG.model } };
+  } catch (err) {
+    const c = classify(err);
+    writeLog({ ok: false, stage: 'jd-ocr', error: c });
+    return { status: 502, payload: Object.assign({ ok: false }, c) };
+  }
+}
+
+/* ------------------------------------------------------------
    6. /api/verify：用官方兼容 SDK 逐一比对候选端点
       只有 SDK 全部失败、且逐端点比对后，才判定 Key 失效
    ------------------------------------------------------------ */
@@ -695,7 +752,8 @@ function readBody(req) {
     let buf = '';
     req.on('data', c => {
       buf += c;
-      if (buf.length > 512 * 1024) { reject(new Error('请求体过大')); req.destroy(); }
+      /* 8MB：JD 截图 base64（前端已压缩，通常 150-400KB）+ 常规 JSON 都够用 */
+      if (buf.length > 8 * 1024 * 1024) { reject(new Error('请求体过大')); req.destroy(); }
     });
     req.on('end', () => {
       if (!buf) return resolve({});
@@ -745,13 +803,16 @@ const server = http.createServer(async (req, res) => {
     try { return json(res, 200, await handleVerify()); }
     catch (e) { return json(res, 500, { ok: false, code: 'VERIFY_CRASH', message: String(e.message) }); }
   }
-  if (pathname === '/api/analyze' || pathname === '/api/bullet') {
+  if (pathname === '/api/analyze' || pathname === '/api/bullet' || pathname === '/api/jd-ocr') {
     if (req.method !== 'POST') return json(res, 405, { ok: false, code: 'METHOD', message: '仅支持 POST' });
     let body;
     try { body = await readBody(req); }
     catch (e) { return json(res, 400, { ok: false, code: 'BAD_BODY', message: e.message }); }
     try {
-      const r = pathname === '/api/analyze' ? await handleAnalyze(body) : await handleBullet(body);
+      let r;
+      if (pathname === '/api/analyze') r = await handleAnalyze(body);
+      else if (pathname === '/api/jd-ocr') r = await handleJdOcr(body);
+      else r = await handleBullet(body);
       return json(res, r.status, r.payload);
     } catch (e) {
       return json(res, 500, { ok: false, code: 'SERVER_CRASH', message: String(e.message) });

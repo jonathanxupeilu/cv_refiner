@@ -130,6 +130,7 @@
       return;
     }
     var materials = Object.assign({}, s.materials);
+    delete materials.jdImage;   // 截图预览只在前端展示，不参与分析
     /* 记录输入规模，失败时可证明「简历确实已提交」，不是输入丢失 */
     var inputEvidence = {
       jd: materials.jd.length, resume: materials.resume.length, extra: (materials.extra || '').length
@@ -178,6 +179,48 @@
       RE.steps.renderResume(s.analysis, s.style);
     U.toast('已唤起打印：目标打印机选「另存为 PDF」');
     window.print();
+  }
+
+  /* ---------------- JD 截图上传 ---------------- */
+  /* canvas 压缩：长边 ≤1600px、JPEG 0.82。data: URL 画图不会污染画布，file:// 直开可用。 */
+  function compressImage(file, maxSide, quality) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('读取文件失败')); };
+      reader.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('图片解码失败，请换 PNG / JPG 截图')); };
+        img.onload = function () {
+          var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleJdFile(file) {
+    var s = S.state;
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { U.toast('请选择 PNG / JPG / WebP 图片', false); return; }
+    U.toast('正在压缩并识别 JD 截图…');
+    compressImage(file, 1600, 0.82).then(function (dataURL) {
+      S.update(function (st) { st.materials.jdImage = dataURL; });   // 显示预览
+      return RE.ai.extractJdFromImage(dataURL);
+    }).then(function (jd) {
+      S.update(function (st) { st.materials.jd = jd; });             // 重渲染后 textarea 已带文本
+      U.toast('识别完成：已转录 ' + jd.length + ' 字 JD，请核对后再开始分析');
+    }).catch(function (err) {
+      var msg = (err && err.code === 'VISION_UNSUPPORTED')
+        ? '当前模型不支持图片识别，请直接粘贴 JD 文本'
+        : ((err && err.code ? err.code + '：' : '') + (err && err.message || '识别失败'));
+      U.toast(msg, false);
+    });
   }
 
   /* ---------------- 复制 / Dialog ---------------- */
@@ -246,6 +289,8 @@
         openCopy(el.getAttribute('data-kind') || 'resume'); break;
       case 'export-pdf':
         exportPdf(); break;
+      case 'clear-jd-image':
+        S.update(function (st) { st.materials.jdImage = ''; }); break;
       case 'export-kind':
         S.update(function (st) { st.exportKind = el.getAttribute('data-kind'); }); break;
       case 'close-dialog':
@@ -276,9 +321,15 @@
   }
 
   function onChange(e) {
-    /* select 在部分浏览器只触发 change，兜底一次 */
     var t = e.target;
-    if (t && t.tagName === 'SELECT' && t.hasAttribute('data-model')) {
+    if (!t) return;
+    if (t.matches && t.matches('[data-jd-file]')) {
+      handleJdFile(t.files && t.files[0]);
+      t.value = '';   // 允许重复选择同一文件
+      return;
+    }
+    /* select 在部分浏览器只触发 change，兜底一次 */
+    if (t.tagName === 'SELECT' && t.hasAttribute('data-model')) {
       S.setMaterial(t.getAttribute('data-model'), t.value);
     }
   }

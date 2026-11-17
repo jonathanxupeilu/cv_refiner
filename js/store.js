@@ -34,7 +34,8 @@
   function blankMaterials() {
     return {
       position: '', industry: '', companyType: '', stage: '',
-      highlight: '', jd: '', resume: '', extra: ''
+      highlight: '', jd: '', resume: '', extra: '',
+      jdImage: ''     // JD 截图预览（dataURL，仅展示用，不参与分析）
     };
   }
 

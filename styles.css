@@ -443,6 +443,13 @@ td .cell-sub { display: block; color: var(--text-3); font-size: 11.5px; margin-t
   .print-root .badge { border: 1px solid #e6e8eb; }
 }
 
+/* ---------------- JD 截图上传 ---------------- */
+.jd-upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.jd-upload-row .card-hint { flex: 1; min-width: 220px; }
+.jd-upload-row input[type="file"] { display: none; }
+.jd-preview { display: inline-flex; align-items: center; gap: 8px; }
+.jd-thumb { height: 52px; max-width: 120px; object-fit: cover; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-subtle); }
+
 .divider { height: 1px; background: var(--border); margin: 18px 0; }
 .mb0 { margin-bottom: 0; }
 .mt8 { margin-top: 8px; }
