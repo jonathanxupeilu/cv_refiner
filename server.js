@@ -418,6 +418,7 @@ function normalizeSummary(a) {
    mergePrematureRootClose 兜底。 */
 function scanStrictViolation(s) {
   let inStr = false, esc = false, expect = 'value';
+  let lastStrStart = -1;   // 最近一次进入字符串的起始下标，用于定位「数组元素后冒号」漏 ]
   const stack = [];
   const top = () => stack[stack.length - 1];
   function parentExpect() {
@@ -442,7 +443,7 @@ function scanStrictViolation(s) {
       }
       continue;
     }
-    if (c === '"') { inStr = true; continue; }
+    if (c === '"') { lastStrStart = i; inStr = true; continue; }
     if (/\s/.test(c)) continue;
     if (c === '{' || c === '[') {
       /* 严格期待校验：key 位置 / 对象值闭合后出现值开头 → 上一成员漏闭合符 */
@@ -454,7 +455,15 @@ function scanStrictViolation(s) {
       continue;
     }
     if (c === ':') {
-      if (expect !== 'colon') return { violation: { insertAt: i, insert: null } };   // 无法语法修复
+      if (expect !== 'colon') {
+        /* 数组元素后（commaOrCloseArr）遇冒号：前一个字符串其实是外层对象的 key，
+           本例 matching.rows 数组漏写 ] → "rowsNote" 被当成数组字符串元素。
+           在该 key 的起始引号前的分隔逗号之前插 ]（避免尾随逗号），让数组先闭合。 */
+        if (expect === 'commaOrCloseArr' && lastStrStart >= 0) {
+          return { violation: { insertAt: beforeComma(lastStrStart), insert: ']' } };
+        }
+        return { violation: { insertAt: i, insert: null } };   // 无法语法修复
+      }
       expect = 'value'; continue;
     }
     if (c === ',') {
