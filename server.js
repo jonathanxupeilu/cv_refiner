@@ -410,15 +410,137 @@ function normalizeSummary(a) {
   a.matching.summary = after;
   return { before, after };
 }
+/* 「嵌套对象/数组漏写闭合符」修复器（实测案例：rewrite[] 元素的 after 对象
+   （5 风格键）后漏 }，reason/risk 被吞进 after，下一个元素的 { 出现在 key
+   期待位，V8 报 Expected double-quoted property name）。
+   严格模拟 V8 期待状态扫描，找到第一个违规点插入一个闭合符/逗号，迭代收敛；
+   遇到无法语法修复的违规（如根提前闭合后仍有内容）即停止，交给
+   mergePrematureRootClose 兜底。 */
+function scanStrictViolation(s) {
+  let inStr = false, esc = false, expect = 'value';
+  const stack = [];
+  const top = () => stack[stack.length - 1];
+  function parentExpect() {
+    const p = stack[stack.length - 1];
+    return p && p.type === 'arr' ? 'commaOrCloseArr' : 'commaOrClose';
+  }
+  /* 「key 期待位出现值」= 上一成员漏 }。闭合符必须插在分隔逗号之前，
+     否则形成尾随逗号（严格 JSON 非法）。逗号紧邻违规字符（中间只可能有空白）。 */
+  function beforeComma(i) {
+    let j = i - 1;
+    while (j >= 0 && /\s/.test(s[j])) j--;
+    return (j >= 0 && s[j] === ',') ? j : i;
+  }
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { esc = true; continue; }
+      if (c === '"') {
+        inStr = false;
+        expect = (expect === 'key') ? 'colon' : parentExpect();
+      }
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (/\s/.test(c)) continue;
+    if (c === '{' || c === '[') {
+      /* 严格期待校验：key 位置 / 对象值闭合后出现值开头 → 上一成员漏闭合符 */
+      if (expect === 'key' || expect === 'commaOrClose') return { violation: { insertAt: beforeComma(i), insert: '}' } };
+      if (expect === 'commaOrCloseArr') return { violation: { insertAt: i, insert: ',' } };
+      if (expect !== 'value') return { violation: { insertAt: i, insert: null } };
+      stack.push({ type: c === '{' ? 'obj' : 'arr' });
+      expect = c === '{' ? 'key' : 'value';
+      continue;
+    }
+    if (c === ':') {
+      if (expect !== 'colon') return { violation: { insertAt: i, insert: null } };   // 无法语法修复
+      expect = 'value'; continue;
+    }
+    if (c === ',') {
+      if (!top()) return null;                                            // 根外内容 → mergePrematureRootClose 的活
+      if (expect !== 'commaOrClose' && expect !== 'commaOrCloseArr') return { violation: { insertAt: i, insert: null } };
+      expect = top().type === 'obj' ? 'key' : 'value'; continue;
+    }
+    if (c === '}') {
+      if (!top()) return null;
+      if (top().type !== 'obj') {
+        /* 数组未闭就想闭对象 → 插 ] 让数组先闭 */
+        if (expect === 'commaOrCloseArr') return { violation: { insertAt: i, insert: ']' } };
+        return { violation: { insertAt: i, insert: null } };
+      }
+      stack.pop(); expect = stack.length ? parentExpect() : 'done'; continue;
+    }
+    if (c === ']') {
+      if (!top()) return null;
+      if (top().type !== 'arr') {
+        /* 对象未闭就想闭数组（本案例 r6 尾部："]}"）→ 插 } 先闭对象 */
+        if (expect === 'commaOrClose') return { violation: { insertAt: i, insert: '}' } };
+        return { violation: { insertAt: i, insert: null } };
+      }
+      stack.pop(); expect = stack.length ? parentExpect() : 'done'; continue;
+    }
+    /* 非字符串值：数字 / true / false / null */
+    const m = /^(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?|true|false|null)/.exec(s.slice(i));
+    if (m) {
+      if (expect !== 'value' && expect !== 'commaOrCloseArr') {
+        /* 值出现在非法期待位：key 位置 → 上一成员缺 }；对象值闭合后 → 同 */
+        if (expect === 'key' || expect === 'commaOrClose') return { violation: { insertAt: beforeComma(i), insert: '}' } };
+        return { violation: { insertAt: i, insert: null } };
+      }
+      i += m[0].length - 1;
+      expect = top() && top().type === 'arr' ? 'commaOrCloseArr' : 'commaOrClose';
+      continue;
+    }
+    /* 裸标识符等 → 无法语法修复 */
+    return { violation: { insertAt: i, insert: null } };
+  }
+  return null;
+}
+
+function insertMissingClosers(t) {
+  let s = String(t || '');
+  for (let round = 0; round < 60; round++) {
+    const v = scanStrictViolation(s);
+    if (!v || !v.violation || v.violation.insert == null) return s;
+    const { insertAt, insert } = v.violation;
+    s = s.slice(0, insertAt) + insert + s.slice(insertAt);
+  }
+  return s;
+}
+
+/* schema 感知的语义修复：语法层补 } 后，被吞进 after 的 reason/risk 搬回
+   rewrite 元素顶层（schema 要求它们是元素字段；after 多余键是漏 } 的连带结果） */
+function liftStrayRewriteMeta(a) {
+  const moved = [];
+  if (!a || !Array.isArray(a.rewrite)) return moved;
+  a.rewrite.forEach((r, i) => {
+    if (!r || typeof r.after !== 'object' || Array.isArray(r.after)) return;
+    ['reason', 'risk'].forEach(k => {
+      if (r[k] === undefined && r.after[k] !== undefined) {
+        r[k] = r.after[k];
+        delete r.after[k];
+        moved.push('rewrite[' + i + '].' + k);
+      }
+    });
+  });
+  return moved;
+}
+
 function tryParse(t) {
   let lastErr = null;
   const repaired = repairJsonText(t);
   const closers = balanceClosers(repaired);
+  const mended = insertMissingClosers(repaired);
+  const mendedRaw = insertMissingClosers(t);
   const variants = [
     t, repaired,
     mergePrematureRootClose(t), mergePrematureRootClose(repaired),
+    mended, mendedRaw,
+    mergePrematureRootClose(mended), mergePrematureRootClose(mendedRaw),
     closers ? repaired + closers : null,
-    closers ? mergePrematureRootClose(repaired + closers) : null
+    closers ? mergePrematureRootClose(repaired + closers) : null,
+    closers ? insertMissingClosers(repaired + closers) : null
   ];
   for (const c of variants) {
     if (c == null) continue;
@@ -494,9 +616,11 @@ async function handleAnalyze(body) {
     instruction: '请严格按 system 提示词里的字段契约输出单个 JSON 对象，不要输出任何解释文字。'
   });
 
-  /* 最多两次：第一次失败（多为截断 / 字符串内真实换行）→ 加大 max_tokens 重试一次 */
+  /* 最多两次：截断 → 加大 max_tokens 重试；语法/契约错误 → 修复器救回，
+     仍失败则原样重试一次（模型第二遍常能写对结构），不再放大 max_tokens */
   const attemptsLog = [];
   let parsed = null, lastRaw = '', lastFinish = '', lastErrMsg = '', lastUsage = null;
+  let normInfo = null, validateErrors = null;
   let maxTokens = CFG.maxTokens;
   for (let attempt = 1; attempt <= 2; attempt++) {
     let completion;
@@ -519,10 +643,27 @@ async function handleAnalyze(body) {
     if (lastFinish === 'length' || !lastRaw.trim()) {
       lastErrMsg = lastFinish === 'length' ? '输出被 max_tokens 截断' : '模型返回空内容';
     } else {
-      try { parsed = parseJsonLoose(lastRaw); break; }
+      let candidate = null;
+      try { candidate = parseJsonLoose(lastRaw); }
       catch (e) { lastErrMsg = e.message; }
+      if (candidate) {
+        const norm = normalizeStructure(candidate, SCHEMA.topLevel);
+        const summaryFix = normalizeSummary(norm.obj);
+        const rewriteLift = liftStrayRewriteMeta(norm.obj);
+        const errs = validateAnalysis(norm.obj);
+        if (!errs.length) {
+          parsed = norm.obj;
+          normInfo = { norm, summaryFix, rewriteLift };
+          break;
+        }
+        validateErrors = errs;
+        lastErrMsg = '输出契约校验失败：' + errs.slice(0, 6).join('；');
+        /* 契约错误重跑一次值得：结构性漏写多为随机，第二遍常能写对 */
+        if (attempt === 1) continue;
+        break;
+      }
     }
-    /* 只有截断才值得重试；语法错误重跑只会重复失败、白花一次调用费用 */
+    /* 只有截断才值得放大 max_tokens；语法错误重跑只会重复失败、白花一次调用费用 */
     const tailChar = lastRaw.trim().slice(-1);
     const looksTruncated = lastFinish === 'length' || (tailChar !== '}' && tailChar !== ']');
     if (!looksTruncated) break;
@@ -530,28 +671,20 @@ async function handleAnalyze(body) {
   }
 
   if (!parsed) {
-    const code = lastFinish === 'length' ? 'TRUNCATED' : 'JSON_PARSE';
+    const code = lastFinish === 'length' ? 'TRUNCATED' : (validateErrors ? 'SCHEMA_INVALID' : 'JSON_PARSE');
     const c = {
-      code, message: lastErrMsg || '模型输出无法解析', attempts: attemptsLog,
+      code, message: lastErrMsg || '模型输出无法解析',
+      errors: validateErrors || undefined,
+      attempts: attemptsLog,
       hint: code === 'TRUNCATED'
         ? '调高 DEEPSEEK_MAX_TOKENS（当前 ' + CFG.maxTokens + '，已自动重试一次）'
-        : '模型未遵守 JSON 契约；已回退本地 mock，原始输出见 logs/analysis-last.json'
+        : code === 'SCHEMA_INVALID'
+          ? '模型两次输出均未通过契约校验；已回退本地 mock，原始输出见 logs/analysis-last.json'
+          : '模型未遵守 JSON 契约；已回退本地 mock，原始输出见 logs/analysis-last.json'
     };
-    writeLog({ ok: false, stage: code === 'TRUNCATED' ? 'truncated' : 'parse', error: c,
+    writeLog({ ok: false, stage: code === 'TRUNCATED' ? 'truncated' : (code === 'SCHEMA_INVALID' ? 'validate' : 'parse'), error: c,
       attemptsLog, inputSizes, rawLen: lastRaw.length, rawHead: lastRaw.slice(0, 600),
       rawTail: lastRaw.slice(-2000), rawFull: lastRaw.slice(0, 120000) });
-    return { status: 502, payload: Object.assign({ ok: false }, c) };
-  }
-
-  const norm = normalizeStructure(parsed, SCHEMA.topLevel);
-  parsed = norm.obj;
-  const summaryFix = normalizeSummary(parsed);
-  const errors = validateAnalysis(parsed);
-  if (errors.length) {
-    const c = { code: 'SCHEMA_INVALID', message: '输出契约校验失败：' + errors.slice(0, 6).join('；'), errors, hint: '已回退本地 mock；原始输出见 logs/analysis-last.json' };
-    writeLog({ ok: false, stage: 'validate', error: c, attemptsLog, inputSizes,
-      normalizedFields: norm.lifted, foldedFields: norm.folded, summaryFix,
-      rawLen: lastRaw.length, rawTail: lastRaw.slice(-2000), rawFull: lastRaw.slice(0, 120000) });
     return { status: 502, payload: Object.assign({ ok: false }, c) };
   }
 
@@ -571,8 +704,10 @@ async function handleAnalyze(body) {
     elapsedMs: Date.now() - started
   };
   writeLog({ ok: true, stage: 'done', model: CFG.model, usage: lastUsage,
-    attemptsLog, inputSizes, normalizedFields: norm.lifted, foldedFields: norm.folded,
-    summaryFix, elapsedMs: parsed.meta.elapsedMs });
+    attemptsLog, inputSizes,
+    normalizedFields: normInfo.norm.lifted, foldedFields: normInfo.norm.folded,
+    summaryFix: normInfo.summaryFix, rewriteLift: normInfo.rewriteLift,
+    elapsedMs: parsed.meta.elapsedMs });
   return { status: 200, payload: { ok: true, analysis: parsed } };
 }
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -851,6 +986,7 @@ const server = http.createServer(async (req, res) => {
 
 /* 供质量门禁直接 require 校验器，不启动 HTTP 服务 */
 module.exports = { CFG, SCHEMA, validateAnalysis, parseJsonLoose, repairJsonText,
+  insertMissingClosers, liftStrayRewriteMeta,
   balanceClosers, normalizeStructure, normalizeSummary, classify, keyMask, parseEnvText, healthFlags, accessAllowed };
 
 if (require.main === module) {
