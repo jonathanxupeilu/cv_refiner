@@ -608,6 +608,7 @@ async function handleAnalyze(body) {
   const payload = JSON.stringify({
     materials: {
       mode,
+      city: materials.city || '',
       position: materials.position || '', industry: materials.industry || '',
       companyType: materials.companyType || '', stage: materials.stage || '',
       highlight: materials.highlight || '', jd: materials.jd || '',
