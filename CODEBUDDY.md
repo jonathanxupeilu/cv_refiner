@@ -26,7 +26,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 - **端点**：`GET /api/health`（provider/模型/密钥状态，脱敏只报长度/前缀）、`GET /api/verify`（SDK 逐一比对候选端点判定 key 可用性）、`POST /api/analyze`、`POST /api/bullet`、`POST /api/jd-ocr`（JD 截图 → 文本，OpenAI 兼容多模态 `image_url`）。另有静态文件服务与可选访问口令保护（`APP_ACCESS_TOKEN`，只保护 API 不保护静态页）。
 - **配置**：`.env` 自解析（只认 `KEY=` 等号写法，冒号写法被忽略——曾因 `KEY:value` 静默为空踩坑）。进程环境变量优先于 .env。启动时快照 .env mtime，用于区分「没填 Key」与「填了 Key 但没重启」。
 - **输出契约校验**：模型返回的 JSON 经 `validateAnalysis()`（对照 `prompts/analyze.schema.json`，版本 `resume-expert/v2`）严格校验，配有一套 JSON 截断修复管线（`repairJsonText` → `mergePrematureRootClose` → `balanceClosers` → `normalizeStructure` → `normalizeSummary`）。修复失败就显式报错降级，**绝不静默伪造成功结果**。顶层 8 个字段：`jdParse / diagnosis / matching / probes / rewrite / resumeBase / interview / positioning`；`interview.statusChallenges`（在职状态质疑应对）与 `positioning`（年龄/经验段的 HR 预期）为 v2 新增。
-- **双模式**：`materials.mode` = `jd`（默认，锚定用户 JD 原文）或 `generic`（无 JD，模型推断通用岗位画像，输出结构完全一致）。generic 时 jd 可空。
+- **单一口径**：分析只锚定用户提供的 JD 原文，`jd` 必填；无「通用版/无 JD」模式（曾短暂支持，已移除）。
 - **日志**：每次调用写 `logs/analysis-last.json`（inputSizes、模型状态、归一化修正项），排查「简历是否送入模型」先看这里。
 - **密钥纪律**：Key 只在服务端环境变量；日志/health 只报长度、前缀、字符集，绝不打印值。
 
@@ -34,7 +34,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 
 - `data.js` — 单一真源：示例输入 `RE.sample`、风格 `RE.styles`、mock 分析结果 `RE.mock`（**Golden Dataset**，作为真实模型的评测基线保留，必须持续通过 `validateAnalysis` 全量校验）。
 - `ai.js` — AI 能力层（唯一可替换点）：`RE.ai.detect/createProvider/generateBullet/buildExportText/extractJdFromImage`。双 provider：`deepseek`（真实调用）与 `local-mock`（离线基线），两者共用同一份 `analyze.schema.json` 契约。
-- `store.js` — 极简状态容器：全局单 state，`update(mutator, shouldRender)`；输入场景传 `shouldRender=false` 避免失焦。`materials.mode` 区分 JD 定制版 / 通用版。
+- `store.js` — 极简状态容器：全局单 state，`update(mutator, shouldRender)`；输入场景传 `shouldRender=false` 避免失焦。
 - `ui.js` — 无框架 UI 原子组件（纯函数 → HTML 字符串），`esc()` 转义。
 - `steps.js` — 8 个流程步骤的视图层；`app.js` — 布局渲染/导航/事件委托/分析编排。
 - **PDF 导出**：零依赖方案——`#print-root` 打印专用容器 + `@media print`（styles.css）+ `window.print()`，浏览器「另存为 PDF」即交付文件；不引入 jsPDF/CDN。

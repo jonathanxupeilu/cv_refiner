@@ -10,7 +10,7 @@
   RE.steps = {};
 
   RE.steps.meta = [
-    { id: 1, title: '输入材料',       desc: '录入岗位与原始简历',     kicker: 'STEP 01 / 08', head: '输入材料', headDesc: '默认「JD 定制版」：录入目标岗位、目标 JD 与原始简历，Agent 全部分析以此为准。没有具体 JD 时可切换「通用版」，由模型推断岗位画像。材料越具体，证据定位越准。' },
+    { id: 1, title: '输入材料',       desc: '录入岗位与原始简历',     kicker: 'STEP 01 / 08', head: '输入材料', headDesc: '录入目标岗位、目标 JD 与原始简历，Agent 全部分析以 JD 原文为准。材料越具体，证据定位越准。' },
     { id: 2, title: 'JD 解析',        desc: '拆职责 / 要求 / 能力',   kicker: 'STEP 02 / 08', head: 'JD 解析', headDesc: '把岗位描述拆成职责、硬性要求、隐性要求、关键词与核心能力权重，作为后续所有匹配的统一口径。' },
     { id: 3, title: '简历诊断',       desc: '评分与问题定位',         kicker: 'STEP 03 / 08', head: '简历诊断', headDesc: '按 JD 口径给原始简历打匹配度评分，拆维度、列问题、排修改优先级。' },
     { id: 4, title: '匹配分析',       desc: '要求 × 证据 × 强度',     kicker: 'STEP 04 / 08', head: '匹配分析', headDesc: '逐条把 JD 要求对齐到简历证据，标注证据强度与补充必要性，明确哪些是硬缺口。' },
@@ -74,8 +74,7 @@
 
   RE.steps.render[1] = function (s) {
     var m = s.materials;
-    var isGeneric = m.mode === 'generic';
-    var canAnalyze = !!(m.resume.trim() && (isGeneric || m.jd.trim()));
+    var canAnalyze = !!(m.jd.trim() && m.resume.trim());
 
     var actionBar =
       '<div class="card card-subtle" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px">' +
@@ -94,27 +93,7 @@
       return actionBar + analyzePanel(s);
     }
 
-    var modeSeg =
-      '<div class="card card-subtle" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px">' +
-        '<div style="flex:1;min-width:240px">' +
-          '<div class="card-title">简历版本</div>' +
-          '<div class="card-hint">' + (isGeneric
-            ? '通用版：无需粘贴 JD，Agent 基于目标岗位 / 行业推断典型画像，走同一条 8 步链路。'
-            : 'JD 定制版（默认）：所有诊断与改写锚定你粘贴的 JD 原文，投递具体公司首选。') + '</div>' +
-        '</div>' +
-        '<div class="seg">' +
-          '<button data-action="mode" data-mode="jd" class="' + (isGeneric ? '' : 'on') + '">JD 定制版</button>' +
-          '<button data-action="mode" data-mode="generic" class="' + (isGeneric ? 'on' : '') + '">通用版（无需 JD）</button>' +
-        '</div>' +
-      '</div>';
-
-    var jdSection = isGeneric
-      ? U.section('目标 JD', 'B', '通用版 · 由模型推断',
-          '<div class="card">' +
-            U.callout('<strong>通用版模式</strong>：无需粘贴 JD。Agent 会基于「目标岗位 + 行业 + 公司类型」推断该类岗位的典型画像（职责 / 硬性 / 隐性要求），作为匹配口径，产出流程与 JD 定制版完全一致。' +
-              '<br><span class="txt-3">投递具体公司前，建议切回 JD 定制版粘贴该公司的 JD 重跑一遍，口径会更准。</span>') +
-          '</div>')
-      : U.section('目标 JD', 'B', '解析与匹配的唯一口径来源',
+    var jdSection = U.section('目标 JD', 'B', '解析与匹配的唯一口径来源',
           '<div class="card">' +
             '<div class="jd-upload-row">' +
               '<label class="btn sm">📷 上传 JD 截图<input type="file" accept="image/png,image/jpeg,image/webp" data-jd-file hidden /></label>' +
@@ -130,7 +109,6 @@
           '</div>');
 
     var form =
-      modeSeg +
       U.section('岗位与求职背景', 'A', '决定匹配口径与表达侧重',
         '<div class="card"><div class="grid-2">' +
           inputField('目标岗位', 'position', m.position, { req: true, ph: '如：AI 产品经理（B 端智能应用方向）' }) +
@@ -236,11 +214,9 @@
      ======================================================== */
   RE.steps.render[2] = function (s) {
     var d = s.analysis.jdParse;
-    var genericBadge = s.materials.mode === 'generic'
-      ? '　<span class="badge amber">通用版 · 岗位画像为模型推断，非特定公司 JD</span>' : '';
 
     var overview = U.card(
-      '<div class="card-title">岗位一句话' + genericBadge + '</div>' +
+      '<div class="card-title">岗位一句话</div>' +
       '<div style="font-size:14px;margin-top:6px">' + esc(d.meta.oneLine) + '</div>' +
       '<div class="grid-4 mt16">' +
         miniStat('岗位', d.meta.position) + miniStat('层级', d.meta.level) +

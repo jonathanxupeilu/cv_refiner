@@ -33,7 +33,6 @@
 
   function blankMaterials() {
     return {
-      mode: 'jd',     // 'jd' = JD 定制版（默认）；'generic' = 通用版（无 JD，模型推断岗位画像）
       city: '上海',   // 期望工作城市：唯一真源，默认上海；模型不得从 JD/公司总部推断
       position: '', industry: '', companyType: '', stage: '',
       highlight: '', jd: '', resume: '', extra: '',

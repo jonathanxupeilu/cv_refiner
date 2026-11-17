@@ -142,7 +142,6 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               materials: materials,
-              mode: materials.mode === 'generic' ? 'generic' : 'jd',
               schema: 'resume-expert/v2'
             })
           })
@@ -182,7 +181,6 @@
     var now = new Date();
     return {
       meta: {
-        mode: materials.mode === 'generic' ? 'generic' : 'jd',
         position: materials.position || '目标岗位',
         industry: materials.industry || '',
         companyType: materials.companyType || '',
@@ -326,8 +324,7 @@
       L.push(iv.intro);
     } else {
       L.push('简历专家 · 完整分析报告');
-      L.push('目标岗位：' + analysis.meta.position + '｜行业：' + analysis.meta.industry +
-        '｜模式：' + (analysis.meta.mode === 'generic' ? '通用版（岗位画像为模型推断）' : 'JD 定制版'));
+      L.push('目标岗位：' + analysis.meta.position + '｜行业：' + analysis.meta.industry);
       L.push('匹配度评分：' + analysis.meta.score + ' / 100｜生成时间：' + analysis.meta.generatedAt);
       L.push('');
       L.push('========== 2. JD 解析 ==========');

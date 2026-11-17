@@ -595,12 +595,8 @@ function callDeepSeek(systemPrompt, userPayload, opts) {
 
 async function handleAnalyze(body) {
   const materials = body && body.materials;
-  const mode = (materials && materials.mode === 'generic') ? 'generic' : 'jd';
-  if (!materials || !String(materials.resume || '').trim()) {
-    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.resume' } };
-  }
-  if (mode === 'jd' && !String(materials.jd || '').trim()) {
-    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.jd（JD 定制版必填；没有 JD 请改用 mode=generic 通用版）' } };
+  if (!materials || !String(materials.jd || '').trim() || !String(materials.resume || '').trim()) {
+    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.jd / materials.resume' } };
   }
   if (CFG.mode !== 'deepseek') {
     return { status: 503, payload: { ok: false, code: 'NO_KEY', message: '服务端未配置 DEEPSEEK_API_KEY，前端将降级到 local-mock', mode: 'local-mock' } };
@@ -609,14 +605,12 @@ async function handleAnalyze(body) {
   const started = Date.now();
   /* 请求级取证：证明 JD / 原始简历确实被送入模型，便于排查「没读取到简历」类反馈 */
   const inputSizes = {
-    mode,
     jd: String(materials.jd || '').length,
     resume: String(materials.resume || '').length,
     extra: String(materials.extra || '').length
   };
   const payload = JSON.stringify({
     materials: {
-      mode,
       city: materials.city || '',
       position: materials.position || '', industry: materials.industry || '',
       companyType: materials.companyType || '', stage: materials.stage || '',
@@ -700,7 +694,6 @@ async function handleAnalyze(body) {
 
   const now = new Date();
   parsed.meta = {
-    mode,
     position: materials.position || '目标岗位',
     industry: materials.industry || '',
     companyType: materials.companyType || '',
