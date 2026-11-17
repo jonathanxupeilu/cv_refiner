@@ -1,0 +1,14 @@
+{
+  "name": "resume-expert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "简历专家 · JD 定制简历优化 Agent（前端零依赖，服务端通过 OpenAI 兼容 SDK 接入 DeepSeek）",
+  "scripts": {
+    "start": "node server.js",
+    "verify": "node scripts/verify.js",
+    "pack": "node scripts/pack-deploy.js"
+  },
+  "dependencies": {
+    "openai": "^7.56.0"
+  }
+}

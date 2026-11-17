@@ -1,0 +1,63 @@
+{
+  "version": "resume-expert/v1",
+  "description": "DeepSeek 输出契约：字段结构与 js/data.js 的 RE.mock 对齐，供服务端做严格校验。调优改本文件与 prompts/*.md，不改代码。",
+  "topLevel": ["jdParse", "diagnosis", "matching", "probes", "rewrite", "resumeBase", "interview"],
+  "required": {
+    "jdParse": ["meta", "responsibilities", "hard", "implicit", "keywords", "idealCandidate", "competency"],
+    "jdParse.meta": ["position", "level", "domain", "oneLine"],
+    "jdParse.competency[]": ["name", "weight", "desc", "basis", "level"],
+    "diagnosis": ["score", "verdict", "dimensions", "problems", "suggestions"],
+    "diagnosis.dimensions[]": ["name", "score", "note", "tone"],
+    "diagnosis.problems[]": ["level", "title", "detail"],
+    "diagnosis.suggestions[]": ["priority", "title", "detail"],
+    "matching": ["summary", "rows"],
+    "matching.summary": ["strong", "medium", "weak", "missing"],
+    "matching.rows[]": ["requirement", "evidence", "strength", "need", "advice"],
+    "probes[]": ["id", "category", "badge", "question", "why", "hint", "bullet"],
+    "rewrite[]": ["id", "part", "before", "after", "reason", "risk"],
+    "resumeBase": ["personal", "intention", "summaryByStyle", "capabilityByStyle", "experience", "projects", "skills", "education"],
+    "resumeBase.personal": ["name", "contact"],
+    "resumeBase.intention": ["line", "sub"],
+    "resumeBase.experience[]": ["company", "role", "period", "bullets"],
+    "resumeBase.projects[]": ["name", "period", "bullets"],
+    "resumeBase.skills[]": ["k", "v"],
+    "resumeBase.education": ["school", "major", "degree", "period"],
+    "interview": ["questions", "evidences", "exaggerations", "dataGaps", "intro"],
+    "interview.questions[]": ["q", "focus", "points"],
+    "interview.evidences[]": ["t", "from", "why"],
+    "interview.exaggerations[]": ["text", "risk", "fix"],
+    "interview.dataGaps[]": ["item", "need", "use"]
+  },
+  "styleKeys": ["balanced", "concise", "humble", "aiProduct", "tobSaas"],
+  "styleObjects": ["rewrite[].after", "resumeBase.summaryByStyle", "resumeBase.capabilityByStyle"],
+  "enums": {
+    "diagnosis.dimensions[].tone": ["green", "amber", "red"],
+    "diagnosis.problems[].level": ["high", "mid", "low"],
+    "matching.rows[].strength": ["强", "中", "弱", "缺失"],
+    "probes[].badge": ["blue", "amber", "violet", "neutral", "green", "red"],
+    "jdParse.competency[].level": ["核心", "重要", "基础", "加分"]
+  },
+  "counts": {
+    "jdParse.responsibilities": { "min": 4, "max": 7 },
+    "jdParse.hard": { "min": 3, "max": 6 },
+    "jdParse.implicit": { "min": 3, "max": 6 },
+    "jdParse.keywords": { "min": 10, "max": 18 },
+    "jdParse.competency": { "min": 5, "max": 8 },
+    "diagnosis.dimensions": { "min": 6, "max": 6 },
+    "diagnosis.problems": { "min": 5, "max": 9 },
+    "diagnosis.suggestions": { "min": 5, "max": 8 },
+    "matching.rows": { "min": 8, "max": 12 },
+    "probes": { "min": 5, "max": 10 },
+    "rewrite": { "min": 6, "max": 9 },
+    "interview.questions": { "min": 10, "max": 10 },
+    "interview.evidences": { "min": 4, "max": 8 },
+    "interview.exaggerations": { "min": 4, "max": 7 },
+    "interview.dataGaps": { "min": 4, "max": 8 }
+  },
+  "numeric": {
+    "diagnosis.score": { "min": 0, "max": 100 },
+    "diagnosis.dimensions[].score": { "min": 0, "max": 100 },
+    "jdParse.competency[].weight": { "min": 0, "max": 100 },
+    "diagnosis.suggestions[].priority": { "min": 1, "max": 20, "integer": true }
+  }
+}

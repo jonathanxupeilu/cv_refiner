@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简历专家 · JD 定制简历优化 Agent</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="boot">正在载入简历专家…</div>
+  </div>
+  <div id="dialog-root"></div>
+  <div id="toast-root"></div>
+
+  <!--
+    加载顺序即依赖顺序：data → ai → store → ui → steps → app
+    全部为传统 script + 全局命名空间 window.RE，无需构建、file:// 直接可运行。
+  -->
+  <script src="js/data.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/steps.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
