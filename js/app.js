@@ -168,6 +168,18 @@
     });
   }
 
+  /* ---------------- PDF 导出 ---------------- */
+  /* 零依赖方案：把当前风格的最终简历填入隐藏打印容器，window.print() 弹出打印对话框，
+     用户选「另存为 PDF」即得交付文件。@media print 只显示 print-root（styles.css）。 */
+  function exportPdf() {
+    var s = S.state;
+    if (!s.analyzed) { U.toast('请先完成分析', false); return; }
+    document.getElementById('print-root').innerHTML =
+      RE.steps.renderResume(s.analysis, s.style);
+    U.toast('已唤起打印：目标打印机选「另存为 PDF」');
+    window.print();
+  }
+
   /* ---------------- 复制 / Dialog ---------------- */
   function openCopy(kind) {
     var s = S.state;
@@ -177,7 +189,7 @@
     S.openDialog({
       title: '复制' + (labels[kind] || '内容'),
       sub: (labels[kind] || '内容') + ' · ' + s.analysis.meta.position + ' · 当前风格：' + U.styleLabel(s.style),
-      note: '<strong>占位能力</strong>：当前仅支持复制到剪贴板，正式 PDF / 文件导出后续接入。本次分析由 <b>' +
+      note: '<strong>交付方式</strong>：简历 PDF 用第 6 / 8 步「导出 PDF」按钮（浏览器打印 → 另存为 PDF）；本对话框用于复制文本。本次分析由 <b>' +
             esc(s.analysis.meta.provider || 'local-mock') + '</b> 产出。',
       text: text
     });
@@ -232,6 +244,8 @@
       case 'copy':
       case 'preview':
         openCopy(el.getAttribute('data-kind') || 'resume'); break;
+      case 'export-pdf':
+        exportPdf(); break;
       case 'export-kind':
         S.update(function (st) { st.exportKind = el.getAttribute('data-kind'); }); break;
       case 'close-dialog':

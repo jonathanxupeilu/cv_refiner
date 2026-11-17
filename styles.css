@@ -427,6 +427,22 @@ td .cell-sub { display: block; color: var(--text-3); font-size: 11.5px; margin-t
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 80; background: var(--text); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 8px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; animation: toastin .2s ease; }
 @keyframes toastin { from { transform: translateX(-50%) translateY(10px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
 
+/* ---------------- PDF 导出（打印视图） ---------------- */
+/* 屏幕上隐藏；window.print() 时只渲染简历容器，浏览器「另存为 PDF」即交付文件 */
+.print-root { display: none; }
+
+@media print {
+  @page { size: A4; margin: 12mm 14mm; }
+  body { background: #fff; }
+  .layout, .overlay, .toast { display: none !important; }
+  .print-root { display: block; }
+  .print-root .resume { border: none; box-shadow: none; border-radius: 0; }
+  .print-root .resume-body { padding: 0 4px; }
+  .print-root .rs-line, .print-root .rs-bullets li, .print-root .rs-summary { font-size: 12px; }
+  .print-root .rs-title { color: #1f2329; }
+  .print-root .badge { border: 1px solid #e6e8eb; }
+}
+
 .divider { height: 1px; background: var(--border); margin: 18px 0; }
 .mb0 { margin-bottom: 0; }
 .mt8 { margin-top: 8px; }

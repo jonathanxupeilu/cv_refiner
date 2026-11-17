@@ -17,7 +17,7 @@
     { id: 5, title: '经历追问',       desc: '填写回答生成 bullet',    kicker: 'STEP 05 / 08', head: '经历追问', headDesc: '针对证据缺口生成追问。填写回答后，Agent 会把你的原始表述转成可直接用于简历的 bullet。' },
     { id: 6, title: '简历优化',       desc: '对照重构 + 最终简历',    kicker: 'STEP 06 / 08', head: '简历优化', headDesc: '逐条展示「修改前 → 修改后 → 修改理由 → 风险提示」，切换表达风格，并输出完整优化版简历。' },
     { id: 7, title: '面试准备',       desc: '追问 / 证据 / 自我介绍', kicker: 'STEP 07 / 08', head: '面试准备', headDesc: '预判面试官追问、待准备证据、可能夸大的表达、建议补充的数据，并给出自我介绍逐字稿。' },
-    { id: 8, title: '导出结果',       desc: '复制最终简历',           kicker: 'STEP 08 / 08', head: '导出结果', headDesc: '汇总本次分析结果，选择导出内容并复制。当前为剪贴板 Dialog 占位，正式文件导出后续接入。' }
+    { id: 8, title: '导出结果',       desc: '复制 / 导出 PDF',        kicker: 'STEP 08 / 08', head: '导出结果', headDesc: '汇总本次分析结果：最终简历可导出 PDF（浏览器打印 → 另存为 PDF），其余内容可复制到剪贴板。' }
   ];
 
   /* 统一的取数入口：未分析时锁定 2-8 */
@@ -404,7 +404,8 @@
     var final = U.section('最终简历（优化版）', '02', esc(styleObj.label),
       '<div class="btn-row" style="margin-bottom:12px">' +
         '<button class="btn sm" data-action="copy" data-kind="resume">复制最终简历</button>' +
-        '<span class="txt-3" style="font-size:11.5px">完整 8 个板块 · 随上方风格切换</span>' +
+        '<button class="btn sm" data-action="export-pdf">导出 PDF / 打印</button>' +
+        '<span class="txt-3" style="font-size:11.5px">完整 8 个板块 · 随上方风格切换 · PDF 用打印对话框「另存为 PDF」</span>' +
       '</div>' + renderResume(s.analysis, style));
 
     return seg + styleNote + compare + final;
@@ -516,13 +517,14 @@
     ];
     var picker = '<div class="card" style="margin-bottom:16px">' +
       '<div class="card-title">选择导出内容</div>' +
-      '<div class="card-hint" style="margin-bottom:12px">当前为「复制到剪贴板」Dialog 占位；正式 PDF / 文件导出后续接入。</div>' +
+      '<div class="card-hint" style="margin-bottom:12px">最终简历支持导出 PDF（打印对话框 → 另存为 PDF）；其余内容复制到剪贴板。</div>' +
       '<div class="seg">' + kinds.map(function (x) {
         return '<button data-action="export-kind" data-kind="' + x.k + '" class="' + (s.exportKind === x.k ? 'on' : '') + '">' + esc(x.label) + '</button>';
       }).join('') + '</div>' +
       '<div class="mt16 btn-row">' +
         '<button class="btn accent" data-action="copy" data-kind="' + s.exportKind + '">复制到剪贴板 →</button>' +
         '<button class="btn" data-action="preview" data-kind="' + s.exportKind + '">预览内容</button>' +
+        (s.exportKind === 'resume' ? '<button class="btn primary" data-action="export-pdf">导出 PDF →</button>' : '') +
       '</div></div>';
 
     var text = RE.ai.buildExportText(a, s.exportKind, { style: s.style });

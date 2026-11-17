@@ -91,7 +91,7 @@
             '<pre id="export-pre">' + UI.esc(dialog.text) + '</pre>' +
           '</div>' +
           '<div class="dlg-foot">' +
-            '<span class="placeholder-note">占位能力：正式 PDF / 文件导出后续接入</span>' +
+            '<span class="placeholder-note">简历 PDF：第 6 / 8 步「导出 PDF」按钮（打印 → 另存为 PDF）</span>' +
             '<button class="btn" data-action="close-dialog">关闭</button>' +
             '<button class="btn accent" data-action="do-copy">复制内容</button>' +
           '</div>' +
