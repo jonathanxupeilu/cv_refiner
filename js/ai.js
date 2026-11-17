@@ -18,7 +18,7 @@
 
   /* 分析阶段（用于可观测的进度反馈，体现 Agent 工作链路） */
   var PHASES = [
-    '解析目标 JD：职责 / 硬性与隐性要求 / 核心能力权重',
+    '解析目标 JD / 岗位画像：职责 / 硬性与隐性要求 / 核心能力权重',
     '诊断原始简历：匹配度评分与维度拆解',
     '逐条对齐 JD 要求与简历证据强度',
     '生成经历追问，定位证据缺口',
@@ -140,7 +140,11 @@
           RE.ai.apiFetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ materials: materials, schema: 'resume-expert/v1' })
+            body: JSON.stringify({
+              materials: materials,
+              mode: materials.mode === 'generic' ? 'generic' : 'jd',
+              schema: 'resume-expert/v2'
+            })
           })
             .then(function (r) {
               return r.json().then(function (p) {
@@ -178,6 +182,7 @@
     var now = new Date();
     return {
       meta: {
+        mode: materials.mode === 'generic' ? 'generic' : 'jd',
         position: materials.position || '目标岗位',
         industry: materials.industry || '',
         companyType: materials.companyType || '',
@@ -314,7 +319,8 @@
       L.push(iv.intro);
     } else {
       L.push('简历专家 · 完整分析报告');
-      L.push('目标岗位：' + analysis.meta.position + '｜行业：' + analysis.meta.industry);
+      L.push('目标岗位：' + analysis.meta.position + '｜行业：' + analysis.meta.industry +
+        '｜模式：' + (analysis.meta.mode === 'generic' ? '通用版（岗位画像为模型推断）' : 'JD 定制版'));
       L.push('匹配度评分：' + analysis.meta.score + ' / 100｜生成时间：' + analysis.meta.generatedAt);
       L.push('');
       L.push('========== 2. JD 解析 ==========');

@@ -125,8 +125,9 @@
   function startAnalyze() {
     var s = S.state;
     if (s.analyzing) return;
-    if (!s.materials.jd.trim() || !s.materials.resume.trim()) {
-      U.toast('请先填写目标 JD 与原始简历', false);
+    var isGeneric = s.materials.mode === 'generic';
+    if (!s.materials.resume.trim() || (!isGeneric && !s.materials.jd.trim())) {
+      U.toast(isGeneric ? '请先填写原始简历' : '请先填写目标 JD 与原始简历', false);
       return;
     }
     var materials = Object.assign({}, s.materials);
@@ -252,6 +253,9 @@
     switch (a) {
       case 'use-sample':
         S.loadSample(); U.toast('已载入示例数据'); break;
+      case 'mode':
+        S.update(function (st) { st.materials.mode = el.getAttribute('data-mode') === 'generic' ? 'generic' : 'jd'; });
+        break;
       case 'clear':
         S.clearMaterials(); U.toast('已清空输入'); break;
       case 'analyze':
@@ -311,7 +315,7 @@
       var btn = document.querySelector('[data-action="analyze"]');
       if (btn) {
         var m = S.state.materials;
-        btn.disabled = !(m.jd.trim() && m.resume.trim());
+        btn.disabled = !(m.resume.trim() && (m.mode === 'generic' || m.jd.trim()));
       }
     } else if (t.hasAttribute('data-probe')) {
       S.setAnswer(t.getAttribute('data-probe'), t.value);

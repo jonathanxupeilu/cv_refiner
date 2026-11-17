@@ -10,6 +10,7 @@
 
   /* ---------------- 示例输入材料 ---------------- */
   RE.sample = {
+    mode: 'jd',
     position: 'AI 产品经理（B 端智能应用方向）',
     industry: '企业服务 / SaaS',
     companyType: 'B 轮及以上成长型公司',

@@ -33,6 +33,7 @@
 
   function blankMaterials() {
     return {
+      mode: 'jd',     // 'jd' = JD 定制版（默认）；'generic' = 通用版（无 JD，模型推断岗位画像）
       position: '', industry: '', companyType: '', stage: '',
       highlight: '', jd: '', resume: '', extra: '',
       jdImage: ''     // JD 截图预览（dataURL，仅展示用，不参与分析）

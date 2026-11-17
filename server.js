@@ -464,8 +464,12 @@ function callDeepSeek(systemPrompt, userPayload, opts) {
 
 async function handleAnalyze(body) {
   const materials = body && body.materials;
-  if (!materials || !String(materials.jd || '').trim() || !String(materials.resume || '').trim()) {
-    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.jd / materials.resume' } };
+  const mode = (materials && materials.mode === 'generic') ? 'generic' : 'jd';
+  if (!materials || !String(materials.resume || '').trim()) {
+    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.resume' } };
+  }
+  if (mode === 'jd' && !String(materials.jd || '').trim()) {
+    return { status: 400, payload: { ok: false, code: 'BAD_INPUT', message: '缺少 materials.jd（JD 定制版必填；没有 JD 请改用 mode=generic 通用版）' } };
   }
   if (CFG.mode !== 'deepseek') {
     return { status: 503, payload: { ok: false, code: 'NO_KEY', message: '服务端未配置 DEEPSEEK_API_KEY，前端将降级到 local-mock', mode: 'local-mock' } };
@@ -474,15 +478,17 @@ async function handleAnalyze(body) {
   const started = Date.now();
   /* 请求级取证：证明 JD / 原始简历确实被送入模型，便于排查「没读取到简历」类反馈 */
   const inputSizes = {
+    mode,
     jd: String(materials.jd || '').length,
     resume: String(materials.resume || '').length,
     extra: String(materials.extra || '').length
   };
   const payload = JSON.stringify({
     materials: {
+      mode,
       position: materials.position || '', industry: materials.industry || '',
       companyType: materials.companyType || '', stage: materials.stage || '',
-      highlight: materials.highlight || '', jd: materials.jd,
+      highlight: materials.highlight || '', jd: materials.jd || '',
       resume: materials.resume, extra: materials.extra || ''
     },
     instruction: '请严格按 system 提示词里的字段契约输出单个 JSON 对象，不要输出任何解释文字。'
@@ -551,6 +557,7 @@ async function handleAnalyze(body) {
 
   const now = new Date();
   parsed.meta = {
+    mode,
     position: materials.position || '目标岗位',
     industry: materials.industry || '',
     companyType: materials.companyType || '',
