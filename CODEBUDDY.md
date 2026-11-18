@@ -46,7 +46,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 
 ## 关键约束（违反会导致已踩过的坑复发）
 
-- 用户 bullet 回流：第 5 步的 `S.state.bullets` 不写回分析契约，只在渲染/导出时经 `RE.ai.buildEffectiveResume` 合入最终简历。任何新增的最终简历出口（页面渲染 / 复制文本 / PDF）都必须透传 `s.bullets`，否则「补充资料不生效、X/Y/N 占位符仍在」的 bug 会复发。简历文本出口还须透传 `s.resumeOverrides`（用户在导出预览中点「保存」的编辑版），否则保存操作对该出口不生效。
+- 用户 bullet 回流：第 5 步的 `S.state.bullets` 不写回分析契约，只在渲染/导出时经 `RE.ai.buildEffectiveResume` 合入最终简历。任何新增的最终简历出口（页面渲染 / 复制文本 / PDF）都必须透传 `s.bullets`，否则「补充资料不生效、X/Y/N 占位符仍在」的 bug 会复发。简历文本出口还须透传 `s.resumeOverrides`（用户在导出预览中点「保存」的编辑版），否则保存操作对该出口不生效；同时 `startAnalyze` 与 `setAnalyzeError` 必须清空 `resumeOverrides`，否则上一轮保存的文本（尤其离线示例预览）会覆盖新分析结果，表现为「导出结果是 mock 数据」。
 - 教育经历：`resumeBase.education` 是数组，本科 / 硕士（含在职）必须逐段成项，不得合并或遗漏；Golden Dataset 已含硕士 + 本科两段，任何契约改动后须通过 `require('./server.js').validateAnalysis(RE.ai.buildMockAnalysis(...))` 全量校验（顺带修复了 mock 曾漏 `positioning` 导致校验不过的既存缺陷）。
 - 模型相关：现役模型 `deepseek-flash` / `deepseek-v4-pro`；`deepseek-chat`/`deepseek-reasoner` 已停用（2026-07-24）。`DEEPSEEK_MAX_TOKENS` 默认 32000（16K 实测会截断完整简历输出）。
 - Dockerfile 必须保持 LF 换行（CRLF 会污染 RUN/HEALTHCHECK）；`.dockerignore` 必须含 `deploy-package/` 与 `_*.js`，否则部署目录会打进镜像。

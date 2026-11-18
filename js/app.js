@@ -137,7 +137,9 @@
     };
     S.update(function (st) {
       st.analyzing = true; st.analyzePhase = 0;
+      /* 新分析即新交付：必须清掉上一轮保存的编辑版覆盖，否则会挡住新结果（回归根因） */
       st.lastFallback = null; st.analyzeError = null; st.demoMode = false;
+      st.resumeOverrides = {};
     });
 
     var onProgress = function (i) { S.update(function (st) { st.analyzePhase = i; }); };

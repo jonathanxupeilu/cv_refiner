@@ -169,6 +169,7 @@
         s.analyzed = false;
         s.analysis = null;
         s.demoMode = false;
+        s.resumeOverrides = {};
         s.analyzeError = err;
         s.currentStep = 1;
         s.visited = { 1: true };
