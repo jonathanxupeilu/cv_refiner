@@ -183,7 +183,7 @@
     var b = s.analysis.resumeBase;
     document.title = (b.personal.name || '简历') + '-' + (s.analysis.meta.position || '').replace(/[\\/:*?"<>|]/g, '');
     document.getElementById('print-root').innerHTML =
-      RE.steps.renderResume(s.analysis, s.style);
+      RE.steps.renderResume(s.analysis, s.style, s.bullets);
     function restoreTitle() { document.title = prevTitle; }
     window.addEventListener('afterprint', restoreTitle);
     U.toast('已唤起打印：目标打印机选「另存为 PDF」，页眉页脚不会出现');
@@ -242,7 +242,7 @@
     var s = S.state;
     if (!s.analyzed) { U.toast('请先完成分析', false); return; }
     var labels = { resume: '最终简历', interview: '面试准备材料', full: '完整分析报告' };
-    var text = RE.ai.buildExportText(s.analysis, kind, { style: s.style });
+    var text = RE.ai.buildExportText(s.analysis, kind, { style: s.style, bullets: s.bullets });
     S.openDialog({
       title: '复制' + (labels[kind] || '内容'),
       sub: (labels[kind] || '内容') + ' · ' + s.analysis.meta.position + ' · 当前风格：' + U.styleLabel(s.style),

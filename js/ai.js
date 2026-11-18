@@ -250,9 +250,81 @@
       });
   };
 
+  /* ---------------- 用户 bullet 回流合成 ----------------
+     根因：第 5 步生成/编辑的 bullet 存在 S.state.bullets（probeId -> 文本），
+     但旧版最终简历渲染与导出只读 analysis.resumeBase，二者从未合流，
+     导致用户补充的真实数字不生效、占位符 X / Y / N 一直留在交付简历里。
+     桥接依据：probe.bullet 是模型基于同一段经历预写的示范 bullet，
+     与 resumeBase 里对应的 bullet 描述同一件事。用「共享数字 + 二字组重合」
+     的确定性相似度选最佳匹配：命中则就地替换，未命中作为补充证据追加。
+     全程只读函数式合成，不修改 analysis 本身，trace 可用于归因。 */
+  function bigrams(s) {
+    var t = String(s || '').replace(/[\s\/\-—「」『』（）()·、，,。；;：:×→]/g, ' ');
+    var out = [];
+    for (var i = 0; i < t.length - 1; i++) out.push(t.slice(i, i + 2));
+    return out;
+  }
+  function bulletSimilarity(a, b) {
+    var na = String(a || '').match(/\d+(?:\.\d+)?%?/g) || [];
+    var nb = String(b || '').match(/\d+(?:\.\d+)?%?/g) || [];
+    var numScore = na.filter(function (x) { return nb.indexOf(x) >= 0; }).length /
+      Math.max(1, Math.max(na.length, nb.length));
+    var ka = bigrams(a), kb = bigrams(b), hit = 0;
+    ka.forEach(function (g) { if (kb.indexOf(g) >= 0) hit++; });
+    var textScore = hit / Math.max(1, Math.min(ka.length, kb.length));
+    return numScore * 0.35 + textScore * 0.65;
+  }
+
+  var MATCH_MIN = 0.14;                       // 低于此分不就地替换，避免误改无关 bullet
+  var NOT_FOR_RESUME = /不建议|面试准备|防夸大/; // 这类追问按设计不进简历
+
+  RE.ai.buildEffectiveResume = function (analysis, bullets) {
+    var base = analysis && analysis.resumeBase;
+    var eff = base ? JSON.parse(JSON.stringify(base)) : base;
+    var trace = {}, extras = [];
+    if (!eff) return { resumeBase: eff, extras: extras, trace: trace };
+
+    var targets = [];
+    ['experience', 'projects'].forEach(function (sec) {
+      (eff[sec] || []).forEach(function (item, i) {
+        (item.bullets || []).forEach(function (text, j) {
+          targets.push({ section: sec, i: i, j: j, text: text });
+        });
+      });
+    });
+
+    (analysis.probes || []).forEach(function (p) {
+      var override = ((bullets && bullets[p.id]) || '').trim();
+      if (!override) return;                    // 未生成/被清空：保留原样
+      if (NOT_FOR_RESUME.test(p.bullet || '') || NOT_FOR_RESUME.test(p.why || '')) {
+        trace[p.id] = { mode: 'skip', reason: '按设计不写入简历（进面试准备）' };
+        return;
+      }
+      var best = null;
+      targets.forEach(function (t) {
+        var score = bulletSimilarity(p.bullet || '', t.text);
+        if (!best || score > best.score) best = { t: t, score: score };
+      });
+      if (best && best.score >= MATCH_MIN) {
+        eff[best.t.section][best.t.i].bullets[best.t.j] = override;
+        trace[p.id] = {
+          mode: 'replace',
+          target: best.t.section + '[' + best.t.i + '].bullets[' + best.t.j + ']',
+          score: +best.score.toFixed(3)
+        };
+      } else {
+        extras.push({ category: p.category || '补充', text: override });
+        trace[p.id] = { mode: 'append', score: best ? +best.score.toFixed(3) : 0 };
+      }
+    });
+    return { resumeBase: eff, extras: extras, trace: trace };
+  };
+
   /* 生成最终简历纯文本（用于导出 / 复制） */
-  RE.ai.buildResumeText = function (analysis, style) {
-    var b = analysis.resumeBase;
+  RE.ai.buildResumeText = function (analysis, style, ctx) {
+    ctx = ctx || {};
+    var eff = RE.ai.buildEffectiveResume(analysis, ctx.bullets);
+    var b = eff.resumeBase;
     var s = pick(style, b.summaryByStyle);
     var caps = b.capabilityByStyle[style] || b.capabilityByStyle.balanced;
     var L = [];
@@ -283,6 +355,11 @@
     b.skills.forEach(function (x) { L.push('  ' + x.k + '：' + x.v); });
     L.push('');
     L.push('【教育背景】' + b.education.period + '　' + b.education.school + '　' + b.education.major + '　' + b.education.degree);
+    if (eff.extras.length) {
+      L.push('');
+      L.push('【经历追问补充】');
+      eff.extras.forEach(function (e) { L.push('  - [' + e.category + '] ' + e.text); });
+    }
     return L.join('\n');
   };
 
@@ -292,7 +369,7 @@
     var style = ctx.style || 'balanced';
     var L = [];
     if (kind === 'resume') {
-      L.push(RE.ai.buildResumeText(analysis, style));
+      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets }));
     } else if (kind === 'interview') {
       var iv = analysis.interview;
       L.push('面试准备材料 · ' + analysis.meta.position);
@@ -357,7 +434,7 @@
       });
       L.push('');
       L.push('========== 最终简历 ==========');
-      L.push(RE.ai.buildResumeText(analysis, style));
+      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets }));
       L.push('');
       L.push('========== 7. 面试准备 ==========');
       L.push('在职状态质疑应对（详见面试材料）：');

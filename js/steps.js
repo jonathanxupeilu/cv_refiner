@@ -352,6 +352,7 @@
      ======================================================== */
   RE.steps.render[5] = function (s) {
     var probes = s.analysis.probes;
+    var trace = RE.ai.buildEffectiveResume(s.analysis, s.bullets).trace;
     var answered = probes.filter(function (p) { return (s.answers[p.id] || '').trim(); }).length;
     var generated = probes.filter(function (p) { return s.bullets[p.id]; }).length;
 
@@ -367,9 +368,14 @@
     var cards = '<div class="grid-2">' + probes.map(function (p, i) {
       var ans = s.answers[p.id] || '';
       var bul = s.bullets[p.id];
+      var dest = trace[p.id];
+      var destLabel = !dest ? '' :
+        dest.mode === 'replace' ? ' · <span style="color:var(--green)">已同步到最终简历</span>' :
+        dest.mode === 'append' ? ' · <span style="color:var(--amber)">将作为补充证据加入简历</span>' :
+        ' · <span class="txt-3">按设计不写入简历（进面试准备）</span>';
       var bulletBox = bul ?
         '<div class="bullet-box">' +
-          '<div class="bb-label">✦ 可用于简历的 bullet（可编辑）</div>' +
+          '<div class="bb-label">✦ 可用于简历的 bullet（可编辑）' + destLabel + '</div>' +
           '<textarea data-bullet="' + p.id + '" rows="3">' + esc(bul) + '</textarea>' +
           '<div class="btn-row mt8"><button class="btn xs" data-action="copy-bullet" data-id="' + p.id + '">复制这条</button></div>' +
         '</div>' : '';
@@ -435,14 +441,16 @@
         '<button class="btn sm" data-action="copy" data-kind="resume">复制最终简历</button>' +
         '<button class="btn sm" data-action="export-pdf">导出 PDF / 打印</button>' +
         '<span class="txt-3" style="font-size:11.5px">完整 8 个板块 · 随上方风格切换 · PDF 用打印对话框「另存为 PDF」</span>' +
-      '</div>' + renderResume(s.analysis, style));
+      '</div>' + renderResume(s.analysis, style, s.bullets));
 
     return seg + styleNote + compare + final;
   };
 
   /* 完整简历渲染 */
-  function renderResume(a, style) {
-    var b = a.resumeBase;
+  function renderResume(a, style, bullets) {
+    /* 合入第 5 步用户生成/编辑的 bullet：真实数字替换占位符，未命中则作为补充证据 */
+    var eff = RE.ai.buildEffectiveResume(a, bullets);
+    var b = eff.resumeBase;
     var summary = U.pick(style, b.summaryByStyle);
     var caps = b.capabilityByStyle[style] || b.capabilityByStyle.balanced;
 
@@ -464,6 +472,12 @@
       return '<div class="rs-line"><span class="rs-meta" style="display:inline-block;width:62px">' + esc(x.k) + '</span>' + esc(x.v) + '</div>';
     }).join('');
 
+    var extrasHtml = eff.extras.length
+      ? sec('经历追问补充', eff.extras.map(function (e) {
+          return '<div class="rs-line"><b>[' + esc(e.category) + ']</b>　' + esc(e.text) + '</div>';
+        }).join(''))
+      : '';
+
     return '<div class="resume">' +
       '<div class="resume-head">' +
         '<div class="resume-name">' + esc(b.personal.name) + '</div>' +
@@ -477,6 +491,7 @@
         sec('项目经历', proj) +
         sec('技能工具', skills) +
         sec('教育背景', '<div class="rs-line">' + esc(b.education.period) + '　<b>' + esc(b.education.school) + '</b>　' + esc(b.education.major) + '　' + esc(b.education.degree) + '</div>') +
+        extrasHtml +
       '</div></div>';
   }
   RE.steps.renderResume = renderResume;
@@ -567,7 +582,7 @@
         (s.exportKind === 'resume' ? '<button class="btn primary" data-action="export-pdf">导出 PDF →</button>' : '') +
       '</div></div>';
 
-    var text = RE.ai.buildExportText(a, s.exportKind, { style: s.style });
+    var text = RE.ai.buildExportText(a, s.exportKind, { style: s.style, bullets: s.bullets });
     var lines = text.split('\n');
     var preview = '<div class="card pad-0">' +
       '<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">' +
