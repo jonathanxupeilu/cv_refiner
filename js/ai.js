@@ -277,7 +277,8 @@
   }
 
   var MATCH_MIN = 0.14;                       // 低于此分不就地替换，避免误改无关 bullet
-  var NOT_FOR_RESUME = /不建议|面试准备|防夸大/; // 这类追问按设计不进简历
+  /* 这类追问按设计不进简历：模型措辞不固定，须同时覆盖「不建议」「不写入简历」「用于面试叙事」等变体 */
+  var NOT_FOR_RESUME = /不建议|不写入|不写进|不入简历|不要写进|不可写入|面试叙事|面试准备|面试材料|仅用于面试|只用于面试|用于面试|防夸大/;
 
   RE.ai.buildEffectiveResume = function (analysis, bullets) {
     var base = analysis && analysis.resumeBase;
@@ -297,7 +298,8 @@
     (analysis.probes || []).forEach(function (p) {
       var override = ((bullets && bullets[p.id]) || '').trim();
       if (!override) return;                    // 未生成/被清空：保留原样
-      if (NOT_FOR_RESUME.test(p.bullet || '') || NOT_FOR_RESUME.test(p.why || '')) {
+      /* 标记可能出现在示范 bullet、追问理由，或用户编辑后的文本里，三处都查 */
+      if (NOT_FOR_RESUME.test(p.bullet || '') || NOT_FOR_RESUME.test(p.why || '') || NOT_FOR_RESUME.test(override)) {
         trace[p.id] = { mode: 'skip', reason: '按设计不写入简历（进面试准备）' };
         return;
       }
