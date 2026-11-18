@@ -280,6 +280,30 @@
   /* 这类追问按设计不进简历：模型措辞不固定，须同时覆盖「不建议」「不写入简历」「用于面试叙事」等变体 */
   var NOT_FOR_RESUME = /不建议|不写入|不写进|不入简历|不要写进|不可写入|面试叙事|面试准备|面试材料|仅用于面试|只用于面试|用于面试|防夸大/;
 
+  /* 模型偶尔把同一段经历复述进相邻两条 bullet（≥20 字连续重合）。
+     交付前去重：保留先出现者，丢弃复述者，避免上下重复。 */
+  var REPEAT_MIN = 20;
+  function sharedRun(a, b) {
+    a = String(a || ''); b = String(b || '');
+    var best = 0;
+    for (var i = 0; i < a.length; i++) {
+      for (var j = 0; j < b.length; j++) {
+        var k = 0;
+        while (i + k < a.length && j + k < b.length && a.charAt(i + k) === b.charAt(j + k)) k++;
+        if (k > best) best = k;
+      }
+    }
+    return best;
+  }
+  function dedupeByRepeat(list) {
+    var out = [];
+    (list || []).forEach(function (text) {
+      if (out.length && sharedRun(out[out.length - 1], text) >= REPEAT_MIN) return;
+      out.push(text);
+    });
+    return out;
+  }
+
   RE.ai.buildEffectiveResume = function (analysis, bullets) {
     var base = analysis && analysis.resumeBase;
     var eff = base ? JSON.parse(JSON.stringify(base)) : base;
@@ -320,6 +344,11 @@
         trace[p.id] = { mode: 'append', score: best ? +best.score.toFixed(3) : 0 };
       }
     });
+    ['experience', 'projects'].forEach(function (sec) {
+      (eff[sec] || []).forEach(function (item) {
+        item.bullets = dedupeByRepeat(item.bullets);
+      });
+    });
     return { resumeBase: eff, extras: extras, trace: trace };
   };
 
@@ -328,7 +357,7 @@
     ctx = ctx || {};
     /* 用户保存的编辑版优先：手动修改后的简历直接成为交付文本 */
     var saved = ctx.resumeOverrides && ctx.resumeOverrides[style];
-    if (typeof saved === 'string' && saved.trim()) return saved;
+    if (typeof saved === 'string' && saved.trim()) return dedupeByRepeat(saved.split('\n')).join('\n');
     var eff = RE.ai.buildEffectiveResume(analysis, ctx.bullets);
     var b = eff.resumeBase;
     var s = pick(style, b.summaryByStyle);
