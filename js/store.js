@@ -141,6 +141,10 @@
     },
 
     openDialog: function (cfg) { RE.store.update(function (s) { s.dialog = cfg; }); },
+    /* 编辑导出预览：只写 state 不重渲染，避免 textarea 失焦；复制时取最新文本 */
+    setDialogText: function (value) {
+      RE.store.update(function (s) { if (s.dialog) s.dialog.text = value; }, false);
+    },
     closeDialog: function () { RE.store.update(function (s) { s.dialog = null; }); },
 
     /* 真实模型失败：保留错误，不生成 analysis，绝不塞示例数据冒充结果 */

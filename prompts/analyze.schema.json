@@ -1,6 +1,6 @@
 {
   "version": "resume-expert/v2",
-  "description": "DeepSeek 输出契约：字段结构与 js/data.js 的 RE.mock 对齐，供服务端做严格校验。v2 新增 interview.statusChallenges（在职状态质疑应对）与 positioning（年龄/经验段 HR 预期）；分析仅锚定用户提供的 JD 原文。调优改本文件与 prompts/*.md，不改代码。",
+  "description": "DeepSeek 输出契约：字段结构与 js/data.js 的 RE.mock 对齐，供服务端做严格校验。v2 新增 interview.statusChallenges（在职状态质疑应对）与 positioning（年龄/经验段 HR 预期）；resumeBase.education 为数组，本科/硕士必须逐段成项，不得合并或遗漏。分析仅锚定用户提供的 JD 原文。调优改本文件与 prompts/*.md，不改代码。",
   "topLevel": ["jdParse", "diagnosis", "matching", "probes", "rewrite", "resumeBase", "interview", "positioning"],
   "required": {
     "jdParse": ["meta", "responsibilities", "hard", "implicit", "keywords", "idealCandidate", "competency"],
@@ -21,7 +21,7 @@
     "resumeBase.experience[]": ["company", "role", "period", "bullets"],
     "resumeBase.projects[]": ["name", "period", "bullets"],
     "resumeBase.skills[]": ["k", "v"],
-    "resumeBase.education": ["school", "major", "degree", "period"],
+    "resumeBase.education[]": ["school", "major", "degree", "period"],
     "interview": ["statusChallenges", "questions", "evidences", "exaggerations", "dataGaps", "intro"],
     "interview.statusChallenges[]": ["challenge", "risk", "strategy"],
     "interview.questions[]": ["q", "focus", "points"],
@@ -53,6 +53,7 @@
     "matching.rows": { "min": 8, "max": 12 },
     "probes": { "min": 5, "max": 10 },
     "rewrite": { "min": 6, "max": 9 },
+    "resumeBase.education": { "min": 1, "max": 4 },
     "interview.questions": { "min": 10, "max": 10 },
     "interview.statusChallenges": { "min": 3, "max": 6 },
     "interview.evidences": { "min": 4, "max": 8 },

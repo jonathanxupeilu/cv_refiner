@@ -150,9 +150,12 @@
     { "name": string, "period": string, "bullets": string[] }
   ],
   "skills": [ { "k": string, "v": string } ],
-  "education": { "school": string, "major": string, "degree": string, "period": string }
+  "education": [
+    { "school": string, "major": string, "degree": string, "period": string }
+  ]
 }
 ```
+- `education` **必须是数组**：按时间倒序逐段列出，本科、硕士（含在职 / 非全日制）各自独立成项。**严禁**把不同学历合并成一条（如把本科院校与硕士专业拼在一起、或把两段就读时间写进同一 period），也**不得**遗漏本科学校。原文未提供的字段留空字符串，不要编造。
 - 个人信息从原始简历提取，不要编造姓名/联系方式；原文打码的保持打码。
 - `intention.sub` 中的城市**只写** `materials.city`（如「上海」）；即使 JD 指定了其他工作地点也保持不变，禁止输出「X / Y（可常驻）」这类合并表述，不要建议更换城市。
 - 最终简历的 bullet 用 STAR / 量化结构，动词用「主导 / 定义 / 推动 / 牵头」等，但必须与证据强度一致（证据弱就用「参与 / 承担」）。

@@ -88,7 +88,10 @@
           '</div>' +
           '<div class="dlg-body">' +
             (dialog.note ? '<div class="callout warn" style="margin-bottom:14px">' + dialog.note + '</div>' : '') +
-            '<pre id="export-pre">' + UI.esc(dialog.text) + '</pre>' +
+            (dialog.editable
+              ? '<div class="dlg-edit-hint">内容可直接编辑，复制以编辑后的文本为准。</div>' +
+                '<textarea id="export-text" class="dlg-edit" spellcheck="false">' + UI.esc(dialog.text) + '</textarea>'
+              : '<pre id="export-pre">' + UI.esc(dialog.text) + '</pre>') +
           '</div>' +
           '<div class="dlg-foot">' +
             '<span class="placeholder-note">简历 PDF：第 6 / 8 步「导出 PDF」按钮（打印 → 另存为 PDF）</span>' +

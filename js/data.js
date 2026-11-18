@@ -390,7 +390,10 @@
       { k: 'AI 应用',  v: 'Prompt 设计、指标 / 意图约束、RAG / Agent / Function Call 概念（了解 / POC）' },
       { k: '工具',     v: 'Axure、禅道、Visio；了解 Python' }
     ],
-    education: { school: '某大学', major: '信息管理与信息系统', degree: '本科', period: '2015 - 2019' }
+    education: [
+      { school: '某大学', major: '企业管理（在职）', degree: '硕士', period: '2020.09 - 2022.06' },
+      { school: '某大学', major: '信息管理与信息系统', degree: '本科', period: '2015 - 2019' }
+    ]
   };
 
   /* ---------- 7. 面试准备 ---------- */

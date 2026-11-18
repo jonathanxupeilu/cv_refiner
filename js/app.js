@@ -248,7 +248,8 @@
       sub: (labels[kind] || '内容') + ' · ' + s.analysis.meta.position + ' · 当前风格：' + U.styleLabel(s.style),
       note: '<strong>交付方式</strong>：简历 PDF 用第 6 / 8 步「导出 PDF」按钮（浏览器打印 → 另存为 PDF）；本对话框用于复制文本。本次分析由 <b>' +
             esc(s.analysis.meta.provider || 'local-mock') + '</b> 产出。',
-      text: text
+      text: text,
+      editable: true
     });
   }
 
@@ -331,6 +332,8 @@
       S.setAnswer(t.getAttribute('data-probe'), t.value);
     } else if (t.hasAttribute('data-bullet')) {
       S.setBulletText(t.getAttribute('data-bullet'), t.value);
+    } else if (t.id === 'export-text') {
+      S.setDialogText(t.value);
     }
   }
 

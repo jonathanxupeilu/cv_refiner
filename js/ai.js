@@ -195,7 +195,8 @@
       probes:       RE.mock.probes,
       rewrite:      RE.mock.rewrite,
       resumeBase:   RE.mock.resumeBase,
-      interview:    RE.mock.interview
+      interview:    RE.mock.interview,
+      positioning:  RE.mock.positioning
     };
   }
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -354,7 +355,10 @@
     L.push('【技能工具】');
     b.skills.forEach(function (x) { L.push('  ' + x.k + '：' + x.v); });
     L.push('');
-    L.push('【教育背景】' + b.education.period + '　' + b.education.school + '　' + b.education.major + '　' + b.education.degree);
+    L.push('【教育背景】');
+    (b.education || []).forEach(function (e) {
+      L.push('  ' + e.period + '　' + e.school + '　' + e.major + '　' + e.degree);
+    });
     if (eff.extras.length) {
       L.push('');
       L.push('【经历追问补充】');

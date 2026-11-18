@@ -490,7 +490,9 @@
         sec('工作经历', exp) +
         sec('项目经历', proj) +
         sec('技能工具', skills) +
-        sec('教育背景', '<div class="rs-line">' + esc(b.education.period) + '　<b>' + esc(b.education.school) + '</b>　' + esc(b.education.major) + '　' + esc(b.education.degree) + '</div>') +
+        sec('教育背景', (b.education || []).map(function (e) {
+          return '<div class="rs-line">' + esc(e.period) + '　<b>' + esc(e.school) + '</b>　' + esc(e.major) + '　' + esc(e.degree) + '</div>';
+        }).join('')) +
         extrasHtml +
       '</div></div>';
   }
