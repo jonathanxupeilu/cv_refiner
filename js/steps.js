@@ -436,10 +436,16 @@
 
     var compare = U.section('修改前 / 修改后 对照', '01', items.length + ' 处重构', cards);
 
+    var savedResume = s.resumeOverrides && s.resumeOverrides[style];
+    var savedHtml = (typeof savedResume === 'string' && savedResume.trim())
+      ? '<span class="badge green">已应用手动编辑版 · 复制与 PDF 导出使用编辑内容</span>' +
+        '<button class="btn xs" data-action="clear-resume-override">恢复结构化版本</button>'
+      : '';
     var final = U.section('最终简历（优化版）', '02', esc(styleObj.label),
       '<div class="btn-row" style="margin-bottom:12px">' +
         '<button class="btn sm" data-action="copy" data-kind="resume">复制最终简历</button>' +
         '<button class="btn sm" data-action="export-pdf">导出 PDF / 打印</button>' +
+        savedHtml +
         '<span class="txt-3" style="font-size:11.5px">完整 8 个板块 · 随上方风格切换 · PDF 用打印对话框「另存为 PDF」</span>' +
       '</div>' + renderResume(s.analysis, style, s.bullets));
 
@@ -497,6 +503,15 @@
       '</div></div>';
   }
   RE.steps.renderResume = renderResume;
+
+  /* 用户保存的编辑版简历 → 可打印 HTML：按行渲染，原样保留手动编辑内容 */
+  RE.steps.renderResumeTextToHtml = function (text) {
+    return '<div class="resume resume-text">' + esc(text).split('\n').map(function (line) {
+      if (/^【.+】$/.test(line)) return '<div class="rs-line" style="font-weight:700;margin:10px 0 4px">' + line + '</div>';
+      if (/^\s+- /.test(line)) return '<div class="rs-line" style="padding-left:14px">' + line.replace(/^\s+/, '') + '</div>';
+      return '<div class="rs-line">' + (line || '&nbsp;') + '</div>';
+    }).join('') + '</div>';
+  };
 
   /* ========================================================
      STEP 7 · 面试准备
@@ -584,7 +599,7 @@
         (s.exportKind === 'resume' ? '<button class="btn primary" data-action="export-pdf">导出 PDF →</button>' : '') +
       '</div></div>';
 
-    var text = RE.ai.buildExportText(a, s.exportKind, { style: s.style, bullets: s.bullets });
+    var text = RE.ai.buildExportText(a, s.exportKind, { style: s.style, bullets: s.bullets, resumeOverrides: s.resumeOverrides });
     var lines = text.split('\n');
     var preview = '<div class="card pad-0">' +
       '<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">' +

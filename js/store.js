@@ -18,6 +18,7 @@
     sampleLoaded: false,
     answers: {},     // probeId -> 用户回答
     bullets: {},     // probeId -> 生成的 bullet（可编辑）
+    resumeOverrides: {}, // style -> 用户在导出预览中保存的编辑版简历文本
     style: 'balanced',
     exportKind: 'resume',
     dialog: null,
@@ -67,6 +68,7 @@
         s.sampleLoaded = true;
         s.answers = {};
         s.bullets = {};
+        s.resumeOverrides = {};
       });
     },
 
@@ -145,6 +147,19 @@
     setDialogText: function (value) {
       RE.store.update(function (s) { if (s.dialog) s.dialog.text = value; }, false);
     },
+    /* 保存编辑版简历：按风格隔离，后续复制 / PDF 导出优先使用；可清除回到结构化版本 */
+    saveResumeOverride: function (text) {
+      RE.store.update(function (s) {
+        s.resumeOverrides = Object.assign({}, s.resumeOverrides);
+        s.resumeOverrides[s.style] = text;
+      });
+    },
+    clearResumeOverride: function () {
+      RE.store.update(function (s) {
+        s.resumeOverrides = Object.assign({}, s.resumeOverrides);
+        delete s.resumeOverrides[s.style];
+      });
+    },
     closeDialog: function () { RE.store.update(function (s) { s.dialog = null; }); },
 
     /* 真实模型失败：保留错误，不生成 analysis，绝不塞示例数据冒充结果 */
@@ -169,7 +184,7 @@
         s.analyzing = false;
         s.analyzeError = null;
         s.demoMode = true;
-        s.answers = {}; s.bullets = {};
+        s.answers = {}; s.bullets = {}; s.resumeOverrides = {};
         s.visited = { 1: true };
         s.currentStep = 1;
       });
@@ -179,7 +194,7 @@
       RE.store.update(function (s) {
         s.currentStep = 1; s.analyzed = false; s.analysis = null;
         s.analyzing = false; s.analyzePhase = 0;
-        s.answers = {}; s.bullets = {}; s.style = 'balanced';
+        s.answers = {}; s.bullets = {}; s.resumeOverrides = {}; s.style = 'balanced';
         s.visited = { 1: true }; s.dialog = null;
         s.lastFallback = null; s.bulletBusy = false;
         s.analyzeError = null; s.demoMode = false;

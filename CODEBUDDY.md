@@ -35,7 +35,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 - `data.js` — 单一真源：示例输入 `RE.sample`、风格 `RE.styles`、mock 分析结果 `RE.mock`（**Golden Dataset**，作为真实模型的评测基线保留，必须持续通过 `validateAnalysis` 全量校验）。
 - `ai.js` — AI 能力层（唯一可替换点）：`RE.ai.detect/createProvider/generateBullet/buildEffectiveResume/buildExportText/extractJdFromImage`。双 provider：`deepseek`（真实调用）与 `local-mock`（离线基线），两者共用同一份 `analyze.schema.json` 契约。`RE.ai.buildEffectiveResume(analysis, bullets)` 是最终简历的单一合成入口：把第 5 步生成/编辑的 bullet 按「probe.bullet ↔ resumeBase bullet」相似度就地替换占位符，未命中降级为「经历追问补充」段，`trace` 记录每条去向供归因；`renderResume` / `buildResumeText` / `buildExportText` 都必须经它取数。
 - `store.js` — 极简状态容器：全局单 state，`update(mutator, shouldRender)`；输入场景传 `shouldRender=false` 避免失焦。
-- `ui.js` — 无框架 UI 原子组件（纯函数 → HTML 字符串），`esc()` 转义。`renderDialog` 支持 `editable`：`editable:true` 时渲染可编辑 `<textarea>`（输入只写 state、不重渲染以免失焦，复制取最新文本）；验证连接等只读 dialog 仍用 `<pre>`。
+- `ui.js` — 无框架 UI 原子组件（纯函数 → HTML 字符串），`esc()` 转义。`renderDialog` 支持 `editable`：`editable:true` 时渲染可编辑 `<textarea>`（输入只写 state、不重渲染以免失焦，复制取最新文本），底部「保存」按钮把编辑文本写入 `S.state.resumeOverrides[style]`（按风格隔离），后续复制 / PDF 导出优先使用；第 6 步提供「恢复结构化版本」清除覆盖。验证连接等只读 dialog 仍用 `<pre>`、且不显示保存按钮。
 - `steps.js` — 8 个流程步骤的视图层；`app.js` — 布局渲染/导航/事件委托/分析编排。
 - **PDF 导出**：零依赖方案——`#print-root` 打印专用容器 + `@media print`（styles.css）+ `window.print()`，浏览器「另存为 PDF」即交付文件；不引入 jsPDF/CDN。
 - **JD 截图上传**：canvas 压缩（长边 1600px / JPEG 0.82，data: URL 不污染画布，file:// 可用）→ `/api/jd-ocr`；模型不支持图片时按 `VISION_UNSUPPORTED` 明确提示粘贴文本。
@@ -46,7 +46,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 
 ## 关键约束（违反会导致已踩过的坑复发）
 
-- 用户 bullet 回流：第 5 步的 `S.state.bullets` 不写回分析契约，只在渲染/导出时经 `RE.ai.buildEffectiveResume` 合入最终简历。任何新增的最终简历出口（页面渲染 / 复制文本 / PDF）都必须透传 `s.bullets`，否则「补充资料不生效、X/Y/N 占位符仍在」的 bug 会复发。
+- 用户 bullet 回流：第 5 步的 `S.state.bullets` 不写回分析契约，只在渲染/导出时经 `RE.ai.buildEffectiveResume` 合入最终简历。任何新增的最终简历出口（页面渲染 / 复制文本 / PDF）都必须透传 `s.bullets`，否则「补充资料不生效、X/Y/N 占位符仍在」的 bug 会复发。简历文本出口还须透传 `s.resumeOverrides`（用户在导出预览中点「保存」的编辑版），否则保存操作对该出口不生效。
 - 教育经历：`resumeBase.education` 是数组，本科 / 硕士（含在职）必须逐段成项，不得合并或遗漏；Golden Dataset 已含硕士 + 本科两段，任何契约改动后须通过 `require('./server.js').validateAnalysis(RE.ai.buildMockAnalysis(...))` 全量校验（顺带修复了 mock 曾漏 `positioning` 导致校验不过的既存缺陷）。
 - 模型相关：现役模型 `deepseek-flash` / `deepseek-v4-pro`；`deepseek-chat`/`deepseek-reasoner` 已停用（2026-07-24）。`DEEPSEEK_MAX_TOKENS` 默认 32000（16K 实测会截断完整简历输出）。
 - Dockerfile 必须保持 LF 换行（CRLF 会污染 RUN/HEALTHCHECK）；`.dockerignore` 必须含 `deploy-package/` 与 `_*.js`，否则部署目录会打进镜像。

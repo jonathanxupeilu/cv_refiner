@@ -324,6 +324,9 @@
   /* 生成最终简历纯文本（用于导出 / 复制） */
   RE.ai.buildResumeText = function (analysis, style, ctx) {
     ctx = ctx || {};
+    /* 用户保存的编辑版优先：手动修改后的简历直接成为交付文本 */
+    var saved = ctx.resumeOverrides && ctx.resumeOverrides[style];
+    if (typeof saved === 'string' && saved.trim()) return saved;
     var eff = RE.ai.buildEffectiveResume(analysis, ctx.bullets);
     var b = eff.resumeBase;
     var s = pick(style, b.summaryByStyle);
@@ -373,7 +376,7 @@
     var style = ctx.style || 'balanced';
     var L = [];
     if (kind === 'resume') {
-      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets }));
+      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets, resumeOverrides: ctx.resumeOverrides }));
     } else if (kind === 'interview') {
       var iv = analysis.interview;
       L.push('面试准备材料 · ' + analysis.meta.position);
@@ -438,7 +441,7 @@
       });
       L.push('');
       L.push('========== 最终简历 ==========');
-      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets }));
+      L.push(RE.ai.buildResumeText(analysis, style, { bullets: ctx.bullets, resumeOverrides: ctx.resumeOverrides }));
       L.push('');
       L.push('========== 7. 面试准备 ==========');
       L.push('在职状态质疑应对（详见面试材料）：');

@@ -95,6 +95,7 @@
           '</div>' +
           '<div class="dlg-foot">' +
             '<span class="placeholder-note">简历 PDF：第 6 / 8 步「导出 PDF」按钮（打印 → 另存为 PDF）</span>' +
+            (dialog.editable ? '<button class="btn primary" data-action="save-resume">保存</button>' : '') +
             '<button class="btn" data-action="close-dialog">关闭</button>' +
             '<button class="btn accent" data-action="do-copy">复制内容</button>' +
           '</div>' +

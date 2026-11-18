@@ -182,8 +182,10 @@
     var prevTitle = document.title;
     var b = s.analysis.resumeBase;
     document.title = (b.personal.name || '简历') + '-' + (s.analysis.meta.position || '').replace(/[\\/:*?"<>|]/g, '');
-    document.getElementById('print-root').innerHTML =
-      RE.steps.renderResume(s.analysis, s.style, s.bullets);
+    var saved = (s.resumeOverrides || {})[s.style];
+    document.getElementById('print-root').innerHTML = (typeof saved === 'string' && saved.trim())
+      ? RE.steps.renderResumeTextToHtml(saved)
+      : RE.steps.renderResume(s.analysis, s.style, s.bullets);
     function restoreTitle() { document.title = prevTitle; }
     window.addEventListener('afterprint', restoreTitle);
     U.toast('已唤起打印：目标打印机选「另存为 PDF」，页眉页脚不会出现');
@@ -242,7 +244,7 @@
     var s = S.state;
     if (!s.analyzed) { U.toast('请先完成分析', false); return; }
     var labels = { resume: '最终简历', interview: '面试准备材料', full: '完整分析报告' };
-    var text = RE.ai.buildExportText(s.analysis, kind, { style: s.style, bullets: s.bullets });
+    var text = RE.ai.buildExportText(s.analysis, kind, { style: s.style, bullets: s.bullets, resumeOverrides: s.resumeOverrides });
     S.openDialog({
       title: '复制' + (labels[kind] || '内容'),
       sub: (labels[kind] || '内容') + ' · ' + s.analysis.meta.position + ' · 当前风格：' + U.styleLabel(s.style),
@@ -312,6 +314,13 @@
         S.closeDialog(); break;
       case 'do-copy':
         U.copy((s.dialog && s.dialog.text) || ''); break;
+      case 'save-resume':
+        if (!s.dialog || !(s.dialog.text || '').trim()) { U.toast('内容为空，未保存', false); break; }
+        S.saveResumeOverride(s.dialog.text);
+        U.toast('已保存：后续复制与 PDF 导出将使用编辑后的版本');
+        break;
+      case 'clear-resume-override':
+        S.clearResumeOverride(); U.toast('已恢复结构化版本'); break;
       case 'reset':
         S.reset(); U.toast('已重置，可重新分析'); break;
     }
