@@ -371,7 +371,7 @@
       var dest = trace[p.id];
       var destLabel = !dest ? '' :
         dest.mode === 'replace' ? ' · <span style="color:var(--green)">已同步到最终简历</span>' :
-        dest.mode === 'append' ? ' · <span style="color:var(--amber)">将作为补充证据加入简历</span>' :
+        dest.mode === 'append' ? ' · <span style="color:var(--amber)">未自动写入简历，请手动合并</span>' :
         ' · <span class="txt-3">按设计不写入简历（进面试准备）</span>';
       var bulletBox = bul ?
         '<div class="bullet-box">' +
@@ -396,7 +396,7 @@
 
     return bar + cards +
       '<div class="mt16">' + U.callout('生成的 bullet 会带上你回答中的要点；其中「X / Y / N」为<strong>待补量化占位符</strong>，交付前请替换为真实数字。' +
-        '第 4 条追问不建议写进简历，会进入「面试准备 → 可能夸大的表达」清单。', 'risk') + '</div>';
+        '能定位到简历原条目的会自动替换，定位不到的需手动合并；面试用途的追问不会写入简历。', 'risk') + '</div>';
   };
 
   /* ========================================================
@@ -478,12 +478,6 @@
       return '<div class="rs-line"><span class="rs-meta" style="display:inline-block;width:62px">' + esc(x.k) + '</span>' + esc(x.v) + '</div>';
     }).join('');
 
-    var extrasHtml = eff.extras.length
-      ? sec('经历追问补充', eff.extras.map(function (e) {
-          return '<div class="rs-line"><b>[' + esc(e.category) + ']</b>　' + esc(e.text) + '</div>';
-        }).join(''))
-      : '';
-
     return '<div class="resume">' +
       '<div class="resume-head">' +
         '<div class="resume-name">' + esc(b.personal.name) + '</div>' +
@@ -499,7 +493,6 @@
         sec('教育背景', (b.education || []).map(function (e) {
           return '<div class="rs-line">' + esc(e.period) + '　<b>' + esc(e.school) + '</b>　' + esc(e.major) + '　' + esc(e.degree) + '</div>';
         }).join('')) +
-        extrasHtml +
       '</div></div>';
   }
   RE.steps.renderResume = renderResume;

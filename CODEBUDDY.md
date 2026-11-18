@@ -33,7 +33,7 @@ FORCE_MOCK=1 node server.js   # 强制本地 mock 模式，离线开发用
 ### 前端（js/，加载顺序即依赖顺序）
 
 - `data.js` — 单一真源：示例输入 `RE.sample`、风格 `RE.styles`、mock 分析结果 `RE.mock`（**Golden Dataset**，作为真实模型的评测基线保留，必须持续通过 `validateAnalysis` 全量校验）。
-- `ai.js` — AI 能力层（唯一可替换点）：`RE.ai.detect/createProvider/generateBullet/buildEffectiveResume/buildExportText/extractJdFromImage`。双 provider：`deepseek`（真实调用）与 `local-mock`（离线基线），两者共用同一份 `analyze.schema.json` 契约。`RE.ai.buildEffectiveResume(analysis, bullets)` 是最终简历的单一合成入口：把第 5 步生成/编辑的 bullet 按「probe.bullet ↔ resumeBase bullet」相似度就地替换占位符，未命中降级为「经历追问补充」段，`trace` 记录每条去向供归因；`renderResume` / `buildResumeText` / `buildExportText` 都必须经它取数。
+- `ai.js` — AI 能力层（唯一可替换点）：`RE.ai.detect/createProvider/generateBullet/buildEffectiveResume/buildExportText/extractJdFromImage`。双 provider：`deepseek`（真实调用）与 `local-mock`（离线基线），两者共用同一份 `analyze.schema.json` 契约。`RE.ai.buildEffectiveResume(analysis, bullets)` 是最终简历的单一合成入口：把第 5 步生成/编辑的 bullet 按「probe.bullet ↔ resumeBase bullet」相似度就地替换占位符，未命中的不进交付简历（仅在第 5 步提示手动合并），`trace` 记录每条去向供归因；`renderResume` / `buildResumeText` / `buildExportText` 都必须经它取数。
 - `store.js` — 极简状态容器：全局单 state，`update(mutator, shouldRender)`；输入场景传 `shouldRender=false` 避免失焦。
 - `ui.js` — 无框架 UI 原子组件（纯函数 → HTML 字符串），`esc()` 转义。`renderDialog` 支持 `editable`：`editable:true` 时渲染可编辑 `<textarea>`（输入只写 state、不重渲染以免失焦，复制取最新文本），底部「保存」按钮把编辑文本写入 `S.state.resumeOverrides[style]`（按风格隔离），后续复制 / PDF 导出优先使用；第 6 步提供「恢复结构化版本」清除覆盖。验证连接等只读 dialog 仍用 `<pre>`、且不显示保存按钮。
 - `steps.js` — 8 个流程步骤的视图层；`app.js` — 布局渲染/导航/事件委托/分析编排。

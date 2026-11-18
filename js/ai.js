@@ -364,11 +364,7 @@
     (b.education || []).forEach(function (e) {
       L.push('  ' + e.period + '　' + e.school + '　' + e.major + '　' + e.degree);
     });
-    if (eff.extras.length) {
-      L.push('');
-      L.push('【经历追问补充】');
-      eff.extras.forEach(function (e) { L.push('  - [' + e.category + '] ' + e.text); });
-    }
+    /* 未匹配到简历原位置的 bullet 不进交付简历，避免工具内部概念污染交付物 */
     return L.join('\n');
   };
 
